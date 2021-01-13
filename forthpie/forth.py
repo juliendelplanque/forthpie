@@ -15,17 +15,6 @@ class Memory(object):
     def __setitem__(self, index, value):
         self.bytes_array[index] = value
 
-class Register(object):
-    def __init__(self, cell_size):
-        self.cell_size = cell_size
-        self.value = 0
-    
-    def __get__(self, obj, objtype=None):
-        return self.value
-    
-    def __set__(self, obj, value):
-        self.value = value
-
 class primitive(object):
     def __init__(self, code, name):
         self.code = code
