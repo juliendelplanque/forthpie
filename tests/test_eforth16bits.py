@@ -6,11 +6,6 @@ from forthpie.compiler import WordReference
 WR = WordReference
 import forthpie.eforth16bits as eforth16bits
 
-#TODO remove this recursionlimit increase
-#TODO that, need to rewrite interpreter to be not recursive
-import sys
-sys.setrecursionlimit(10**6) 
-
 @pytest.mark.parametrize("to_compile, expected_data_stack",
     [
         pytest.param(

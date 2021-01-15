@@ -93,6 +93,7 @@ class ForthInterpreter(MemoryManipulator):
         else:
             self.output_stream = io.StringIO("")
         self.logger = logger
+        self.keep_going = False
     
     def log_info(self, *args, **kwargs):
         if not self.logger:
@@ -112,15 +113,18 @@ class ForthInterpreter(MemoryManipulator):
     def next(self):
         """
         """
-        self.log_info(f"IP: {self.interpreter_pointer}")
-        self.word_pointer = self.read_cell_at_address(self.interpreter_pointer)
-        self.interpreter_pointer += self.cell_size
-        self.step(self.read_cell_at_address(self.word_pointer))
-    
+        self.keep_going = True
+        
     def start(self):
         """Start interpreting Forth image.
         """
-        self.next()
+        self.keep_going = True
+        while self.keep_going:
+            self.keep_going = False
+            self.log_info(f"IP: {self.interpreter_pointer}")
+            self.word_pointer = self.read_cell_at_address(self.interpreter_pointer)
+            self.interpreter_pointer += self.cell_size
+            self.step(self.read_cell_at_address(self.word_pointer))
     
     @classmethod
     def get_primitive_by_address(cls, address):
