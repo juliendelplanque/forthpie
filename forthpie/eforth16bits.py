@@ -1,5 +1,5 @@
 from .forth import Memory
-from .compiler import Compiler, WordReference
+from .compiler import Compiler, WordReference, Label, LabelReference
 
 CELL_SIZE = 2
 
@@ -24,6 +24,9 @@ def WR(*args):
         return [WordReference(s) for s in args]
     else:
         Exception("Can not build WR")
+
+L = Label
+LR = LabelReference
 
 def bootstrap_16bits_eforth():
     COMPILE_ONLY = Compiler.COMPILE_ONLY
@@ -113,9 +116,9 @@ def bootstrap_16bits_eforth():
     # Common functions
     compiler.compile_colon("?DUP",
         [WR("DUP"),
-        WR("?branch"), compiler.code_address+(5+1)*compiler.cell_size, # +1 because there is a doLIST to start word def
+        WR("?branch"), LR("?DUP1"),
         WR("DUP"),
-        WR("EXIT")]
+        L("?DUP1"), WR("EXIT")]
     )
     compiler.compile_colon("ROT",
         code(">R SWAP R> SWAP EXIT")
@@ -144,40 +147,40 @@ def bootstrap_16bits_eforth():
     )
     compiler.compile_colon("ABS",
         [WR("DUP"), WR("0<"),
-        WR("?branch"), compiler.code_address+(5+1)*compiler.cell_size,
-        WR("NEGATE"), WR("EXIT")]
+        WR("?branch"), LR("ABS1"),
+        WR("NEGATE"), L("ABS1"), WR("EXIT")]
     )
     
     # Comparison
     compiler.compile_colon("=",
         [WR("XOR"),
-        WR("?branch"), compiler.code_address+(6+1)*compiler.cell_size,
+        WR("?branch"), LR("=1"),
         WR("doLIT"), 0, WR("EXIT"),
-        WR("doLIT"), -1, WR("EXIT")]
+        L("=1"), WR("doLIT"), -1, WR("EXIT")]
     )
     compiler.compile_colon("U<",
         [WR("2DUP"), WR("XOR"), WR("0<"),
-        WR("?branch"), compiler.code_address+(9+1)*compiler.cell_size,
+        WR("?branch"), LR("U<1"),
         WR("SWAP"), WR("DROP"), WR("0<"), WR("EXIT"),
-        WR("-"), WR("0<"), WR("EXIT")]
+        L("U<1"), WR("-"), WR("0<"), WR("EXIT")]
     )
     compiler.compile_colon("<",
         [WR("2DUP"), WR("XOR"), WR("0<"),
-        WR("?branch"), compiler.code_address+(8+1)*compiler.cell_size,
+        WR("?branch"), LR("<1"),
         WR("DROP"), WR("0<"), WR("EXIT"),
-        WR("-"), WR("0<"), WR("EXIT")]
+        L("<1"), WR("-"), WR("0<"), WR("EXIT")]
     )
     compiler.compile_colon("MAX",
         [WR("2DUP"), WR("<"),
-        WR("?branch"), compiler.code_address+(5+1)*compiler.cell_size,
+        WR("?branch"), LR("MAX1"),
         WR("SWAP"),
-        WR("DROP"), WR("EXIT")]
+        L("MAX1"), WR("DROP"), WR("EXIT")]
     )
     compiler.compile_colon("MIN",
         [WR("2DUP"), WR("SWAP"), WR("<"),
-        WR("?branch"), compiler.code_address+(6+1)*compiler.cell_size,
+        WR("?branch"), LR("MIN1"),
         WR("SWAP"),
-        WR("DROP"), WR("EXIT")]
+        L("MIN1"), WR("DROP"), WR("EXIT")]
     )
     compiler.compile_colon("WITHIN",
         code("OVER - >R - R> U< EXIT")
@@ -185,25 +188,37 @@ def bootstrap_16bits_eforth():
 
     # Divide
     compiler.compile_colon("UM/MOD",
-        [WR("doLIT"), 0, WR("SWAP"), WR("doLIT"), 15, WR(">R"),
-        WR(">R"), WR("DUP"), WR("UM+"),
+        [WR("2DUP"), WR("U<"),
+        WR("?branch"), LR("UMM4"),
+        WR("NEGATE"), WR("doLIT"), 15, WR(">R"),
+    L("UMM1"), WR(">R"), WR("DUP"), WR("UM+"),
         WR(">R"), WR(">R"), WR("DUP"), WR("UM+"),
         WR("R>"), WR("+"), WR("DUP"),
         WR("R>"), WR("R@"), WR("SWAP"), WR(">R"),
+        WR("UM+"), WR("R>"), WR("OR"),
+        WR("?branch"), LR("UMM2"),
+        WR(">R"), WR("DROP"), WR("doLIT"), 1, WR("+"), WR("R>"),
+        WR("branch"), LR("UMM3"),
+    L("UMM2"), WR("DROP"),
+    L("UMM3"), WR("R>"),
+        WR("next"), LR("UMM1"),
+        WR("DROP"), WR("SWAP"), WR("EXIT"),
+    L("UMM4"), WR("DROP"), WR("2DROP"),
+        WR("doLIT"), -1, WR("DUP"), WR("EXIT")
         ]
     )
-    compiler.compile_colon("M/MOD",
-        []#TODO
-    )
-    compiler.compile_colon("/MOD",
-        []#TODO
-    )
-    compiler.compile_colon("MOD",
-        []#TODO
-    )
-    compiler.compile_colon("/",
-        []#TODO
-    )
+    # compiler.compile_colon("M/MOD",
+    #     []#TODO
+    # )
+    # compiler.compile_colon("/MOD",
+    #     []#TODO
+    # )
+    # compiler.compile_colon("MOD",
+    #     []#TODO
+    # )
+    # compiler.compile_colon("/",
+    #     []#TODO
+    # )
     # # Multiply
     # compiler.compile_colon("UM*",
     #     []#TODO

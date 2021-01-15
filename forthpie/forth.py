@@ -164,12 +164,14 @@ class ForthInterpreter(MemoryManipulator):
     def push_on_data_stack(self, cell_value):
         # import inspect
         # print(f"push_on_data_stack({cell_value}) from {inspect.stack()[1][3]}")
+        self.log_info(f"push_on_data_stack({cell_value})")
         self.write_cell_at_address(self.data_stack_pointer, cell_value)
         self.allocate_data_stack()
     
     def pop_from_data_stack(self):
         # import inspect
         # print(f"pop_from_data_stack() -> {self.top_of_data_stack()} from {inspect.stack()[1][3]}")
+        self.log_info(f"pop_from_data_stack() -> {self.top_of_data_stack()}")
         self.deallocate_data_stack()
         return self.read_cell_at_address(self.data_stack_pointer)
     
@@ -190,6 +192,7 @@ class ForthInterpreter(MemoryManipulator):
     def pop_from_return_stack(self):
         # import inspect
         # print(f"pop_from_return_stack() -> {self.top_of_return_stack()} from {inspect.stack()[1][3]}")
+        self.log_info(f"pop_from_return_stack() -> {self.top_of_return_stack()}")
         cell = self.read_cell_at_address(self.return_stack_pointer)
         self.deallocate_return_stack()
         return cell
@@ -197,6 +200,7 @@ class ForthInterpreter(MemoryManipulator):
     def push_on_return_stack(self, cell_value):
         # import inspect
         # print(f"push_on_return_stack({cell_value}) from {inspect.stack()[1][3]}")
+        self.log_info(f"push_on_return_stack({cell_value})")
         self.allocate_return_stack()
         self.write_cell_at_address(self.return_stack_pointer, cell_value)
     
@@ -301,17 +305,24 @@ class ForthInterpreter(MemoryManipulator):
         self.return_stack_pointer += self.cell_size # deallocate space for cell on datastack
         self.next()
     
+    @debug
     @primitive(8, "next")
     def next_primitive(self):
-        """Decrement index at top of data stack and exit loop when index reach 0.
+        """Run time code for the single index loop.
 
         ( -- )
+
+        High level version:
+        : next
+            r> r> dup if 1 - >r @ >r exit then drop cell+ >r ;
         """
-        index = self.pop_from_data_stack()
-        if index == 0:
-            self.interpreter_pointer += self.cell_size # exit the loop
+        index = self.pop_from_return_stack()
+        index -= 1
+        print(f"index {index}")
+        if index < 0:
+            self.interpreter_pointer += self.cell_size
         else:
-            self.push_on_data_stack(index - 1)
+            self.push_on_return_stack(index)
             self.interpreter_pointer = self.read_cell_at_address(self.interpreter_pointer)
         self.next()
     
@@ -418,7 +429,7 @@ class ForthInterpreter(MemoryManipulator):
 
         ( -- w )
         """
-        w = self.top_from_return_stack()
+        w = self.top_of_return_stack()
         self.push_on_data_stack(w)
         self.next()
 

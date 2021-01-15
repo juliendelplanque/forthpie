@@ -7,6 +7,21 @@ class WordReference(object):
     def __str__(self):
         return f"{self.__class__.__name__}({self.name})"
 
+class Label(object):
+    def __init__(self, name):
+        self.name = name
+    
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.name})"
+
+class LabelReference(object):
+    def __init__(self, name):
+        self.name = name
+        self.resolved_address = None
+    
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.name})"
+
 class WordNotInDictionary(Exception):
     def __init__(self, name):
         self.name = name
@@ -128,6 +143,14 @@ class Compiler(MemoryManipulator):
             self.user_address += self.cell_size
 
     def compile_word_body(self, tokens):
+        label_addresses = dict()
+        code_address_for_label_resolution = self.code_address
+        for token in tokens:
+            if isinstance(token, Label):
+                label_addresses[token.name] = code_address_for_label_resolution
+            else:
+                code_address_for_label_resolution += self.cell_size
+
         for token in tokens:
             if isinstance(token, str):
                 pass # TODO
@@ -139,6 +162,11 @@ class Compiler(MemoryManipulator):
             elif isinstance(token, WordReference):
                 address = self.lookup_word(token)
                 self.write_cell_at_address(self.code_address, address)
+                self.code_address += self.cell_size
+            elif isinstance(token, Label):
+                pass #ignore
+            elif isinstance(token, LabelReference):
+                self.write_cell_at_address(self.code_address, label_addresses[token.name])
                 self.code_address += self.cell_size
             else:
                 raise Exception("Unknown token")
