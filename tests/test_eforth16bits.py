@@ -172,7 +172,7 @@ def test_WORD(to_compile, expected_data_stack):
 
     initial_data_stack_pointer = interpreter.data_stack_pointer
     interpreter.memory = compiler.memory
-    interpreter.next()
+    interpreter.start()
     assert interpreter.data_stack_pointer == initial_data_stack_pointer + len(expected_data_stack)*interpreter.cell_size
 
     for i, stack_data in enumerate(expected_data_stack):

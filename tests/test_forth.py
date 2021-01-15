@@ -70,7 +70,7 @@ def test_imrx_no_input(interpreter):
     interpreter.memory[96] = 0
     interpreter.memory[97] = 0
 
-    interpreter.next()
+    interpreter.start()
 
     assert interpreter.memory[50:54] == [0,0,0,0]
     assert interpreter.word_pointer == 94
@@ -106,7 +106,7 @@ def test_imrx_input(interpreter):
     interpreter.memory[96] = 0
     interpreter.memory[97] = 0
 
-    interpreter.next()
+    interpreter.start()
     
     assert interpreter.memory[50:54] == [0,0,0,97]
     assert interpreter.memory[54:58] == [0xFF,0xFF,0xFF,0xFF]
@@ -148,13 +148,13 @@ def test_txem(interpreter):
     interpreter.memory[96] = 0
     interpreter.memory[97] = 0
 
-    interpreter.next()
+    interpreter.start()
 
     assert interpreter.data_stack_pointer == 50
     interpreter.output_stream.seek(0)
     assert interpreter.output_stream.read(1) == "a"
 
-def test_next(interpreter):
+def test_start(interpreter):
     interpreter.interpreter_pointer = 50
 
     # Address of a code word located at address 90 in memory
@@ -169,7 +169,7 @@ def test_next(interpreter):
     interpreter.memory[92] = 0
     interpreter.memory[93] = 0
 
-    interpreter.next()
+    interpreter.start()
 
     assert interpreter.word_pointer == 90
     assert interpreter.interpreter_pointer == 54
@@ -205,7 +205,7 @@ def test_doLIT(interpreter):
     interpreter.memory[96] = 0
     interpreter.memory[97] = 0
     
-    interpreter.next()
+    interpreter.start()
 
     assert interpreter.word_pointer == 94
     assert interpreter.interpreter_pointer == 62

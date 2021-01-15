@@ -117,6 +117,11 @@ class ForthInterpreter(MemoryManipulator):
         self.interpreter_pointer += self.cell_size
         self.step(self.read_cell_at_address(self.word_pointer))
     
+    def start(self):
+        """Start interpreting Forth image.
+        """
+        self.next()
+    
     @classmethod
     def get_primitive_by_address(cls, address):
         for prim_name in dir(cls):
