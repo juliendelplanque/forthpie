@@ -114,6 +114,12 @@ class ForthInterpreter(MemoryManipulator):
         """
         """
         self.keep_going = True
+    
+    def _next(self):
+        self.log_info(f"IP: {self.interpreter_pointer}")
+        self.word_pointer = self.read_cell_at_address(self.interpreter_pointer)
+        self.interpreter_pointer += self.cell_size
+        self.step(self.read_cell_at_address(self.word_pointer))
         
     def start(self):
         """Start interpreting Forth image.
@@ -121,10 +127,7 @@ class ForthInterpreter(MemoryManipulator):
         self.keep_going = True
         while self.keep_going:
             self.keep_going = False
-            self.log_info(f"IP: {self.interpreter_pointer}")
-            self.word_pointer = self.read_cell_at_address(self.interpreter_pointer)
-            self.interpreter_pointer += self.cell_size
-            self.step(self.read_cell_at_address(self.word_pointer))
+            self._next()
     
     @classmethod
     def get_primitive_by_address(cls, address):
@@ -189,6 +192,8 @@ class ForthInterpreter(MemoryManipulator):
 
         Return stack grows downward.
         """
+        # import inspect
+        # print(f"allocate_return_stack() from {inspect.stack()[1][3]}")
         self.return_stack_pointer -= self.cell_size
     
     def deallocate_return_stack(self):
@@ -196,6 +201,8 @@ class ForthInterpreter(MemoryManipulator):
 
         Return stack grows downward.
         """
+        # import inspect
+        # print(f"deallocate_return_stack() from {inspect.stack()[1][3]}")
         self.return_stack_pointer += self.cell_size
 
     def pop_from_return_stack(self):
@@ -314,7 +321,6 @@ class ForthInterpreter(MemoryManipulator):
         self.return_stack_pointer += self.cell_size # deallocate space for cell on datastack
         self.next()
     
-    @debug
     @primitive(8, "next")
     def next_primitive(self):
         """Run time code for the single index loop.
@@ -327,7 +333,6 @@ class ForthInterpreter(MemoryManipulator):
         """
         index = self.pop_from_return_stack()
         index -= 1
-        print(f"index {index}")
         if index < 0:
             self.interpreter_pointer += self.cell_size
         else:
@@ -421,7 +426,6 @@ class ForthInterpreter(MemoryManipulator):
         self.return_stack_pointer = self.pop_from_data_stack()
         self.next()
 
-    @debug
     @primitive(17, "R>")
     def Rgt(self):
         """Pop return stack to data stack.
@@ -442,7 +446,6 @@ class ForthInterpreter(MemoryManipulator):
         self.push_on_data_stack(w)
         self.next()
 
-    @debug
     @primitive(19, ">R")
     def gtR(self):
         """Pop from data stack and push on return stack.
@@ -450,7 +453,6 @@ class ForthInterpreter(MemoryManipulator):
         ( w -- )
         """
         w = self.pop_from_data_stack()
-        print(f"data {w}")
         self.push_on_return_stack(w)
         self.next()
 
@@ -571,10 +573,19 @@ class ForthInterpreter(MemoryManipulator):
         w1 = self.pop_from_data_stack()
         w2 = self.pop_from_data_stack()
         w = w1 + w2
-        print(f"w1 + w2 = w | {w1} + {w2} = {w}")
         self.push_on_data_stack(w)
         if (w >> (self.cell_size * 8)) > 0:
             self.push_on_data_stack(self.cell_all_bit_at_one())
         else:
             self.push_on_data_stack(0)
+        self.next()
+
+    @primitive(31, "UM/MOD")
+    def UMMOD(self):
+        u = self.pop_from_data_stack()
+        d = self.pop_from_data_stack()<<self.cell_size
+        d |= self.pop_from_data_stack()
+
+        self.push_on_data_stack(d % u)
+        self.push_on_data_stack(d // u)
         self.next()

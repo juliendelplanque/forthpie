@@ -70,6 +70,7 @@ def bootstrap_16bits_eforth():
     compiler.compile_primitive("OR")
     compiler.compile_primitive("XOR")
     compiler.compile_primitive("UM+")
+    compiler.compile_primitive("UM/MOD")
 
     # System and user variables
     compiler.compile_colon("doVAR",
@@ -187,80 +188,112 @@ def bootstrap_16bits_eforth():
     )
 
     # Divide
-    compiler.compile_colon("UM/MOD",
-        [WR("2DUP"), WR("U<"),
-        WR("?branch"), LR("UMM4"),
-        WR("NEGATE"), WR("doLIT"), 15, WR(">R"),
-    L("UMM1"), WR(">R"), WR("DUP"), WR("UM+"),
-        WR(">R"), WR(">R"), WR("DUP"), WR("UM+"),
-        WR("R>"), WR("+"), WR("DUP"),
-        WR("R>"), WR("R@"), WR("SWAP"), WR(">R"),
-        WR("UM+"), WR("R>"), WR("OR"),
-        WR("?branch"), LR("UMM2"),
-        WR(">R"), WR("DROP"), WR("doLIT"), 1, WR("+"), WR("R>"),
-        WR("branch"), LR("UMM3"),
-    L("UMM2"), WR("DROP"),
-    L("UMM3"), WR("R>"),
-        WR("next"), LR("UMM1"),
-        WR("DROP"), WR("SWAP"), WR("EXIT"),
-    L("UMM4"), WR("DROP"), WR("2DROP"),
-        WR("doLIT"), -1, WR("DUP"), WR("EXIT")
-        ]
+    # TODO: I was not able to implement this word in Forth so I created a primitive for it.
+    # TODO: Come back on it later...
+    # compiler.compile_colon("UM/MOD",
+    #     [WR("2DUP"), WR("U<"),
+    #     WR("?branch"), LR("UMM4"),
+    #     WR("NEGATE"), WR("doLIT"), 15, WR(">R"),
+    # L("UMM1"), WR(">R"), WR("DUP"), WR("UM+"),
+    #     WR(">R"), WR(">R"), WR("DUP"), WR("UM+"),
+    #     WR("R>"), WR("+"), WR("DUP"),
+    #     WR("R>"), WR("R@"), WR("SWAP"), WR(">R"),
+    #     WR("UM+"), WR("R>"), WR("OR"),
+    #     WR("?branch"), LR("UMM2"),
+    #     WR(">R"), WR("DROP"), WR("doLIT"), 1, WR("+"), WR("R>"),
+    #     WR("branch"), LR("UMM3"),
+    # L("UMM2"), WR("DROP"),
+    # L("UMM3"), WR("R>"),
+    #     WR("next"), LR("UMM1"),
+    #     WR("DROP"), WR("SWAP"), WR("EXIT"),
+    # L("UMM4"), WR("DROP"), WR("2DROP"),
+    #     WR("doLIT"), -1, WR("DUP"), WR("EXIT")
+    #     ]
+    # )
+    compiler.compile_colon("M/MOD",
+        [WR("DUP"), WR("0<"), WR("DUP"), WR(">R"),
+        WR("?branch"), LR("MMOD1"),
+        WR("NEGATE"), WR(">R"), WR("DNEGATE"), WR("R>"),
+    L("MMOD1"), WR(">R"), WR("DUP"), WR("0<"),
+        WR("?branch"), LR("MMOD2"),
+        WR("R@"), WR("+"),
+    L("MMOD2"), WR("R>"), WR("UM/MOD"), WR("R>"),
+        WR("?branch"), LR("MMOD3"),
+        WR("SWAP"), WR("NEGATE"), WR("SWAP"),
+    L("MMOD3"), WR("EXIT")]
     )
-    # compiler.compile_colon("M/MOD",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("/MOD",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("MOD",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("/",
-    #     []#TODO
-    # )
-    # # Multiply
-    # compiler.compile_colon("UM*",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("*",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("M*",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("*/MOD",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("*/",
-    #     []#TODO
-    # )
+    compiler.compile_colon("/MOD",
+        [WR("OVER"), WR("0<"), WR("SWAP"), WR("M/MOD"), WR("EXIT")]
+    )
+    compiler.compile_colon("MOD",
+        [WR("/MOD"), WR("DROP"), WR("EXIT")]
+    )
+    compiler.compile_colon("/",
+        [WR("/MOD"), WR("SWAP"), WR("DROP"), WR("EXIT")]
+    )
+    # Multiply
+    compiler.compile_colon("UM*",
+        [WR("doLIT"), 0, WR("SWAP"), WR("doLIT"), 15, WR(">R"),
+    L("UMST1"), WR("DUP"), WR("UM+"), WR(">R"), WR(">R"),
+        WR("DUP"), WR("UM+"), WR("R>"), WR("+"), WR("R>"),
+        WR("?branch"), LR("UMST2"),
+        WR(">R"), WR("OVER"), WR("UM+"),WR("R>"), WR("+"),
+    L("UMST2"), WR("next"), LR("UMST1"),
+        WR("ROT"), WR("DROP"), WR("EXIT")]
+    )
+    compiler.compile_colon("*",
+        [WR("UM*"), WR("DROP"), WR("EXIT")]
+    )
+    compiler.compile_colon("M*",
+        [WR("2DUP"), WR("XOR"), WR("0<"), WR(">R"),
+        WR("ABS"), WR("SWAP"), WR("ABS"), WR("UM*"),
+        WR("R>"),
+        WR("?branch"), LR("MSTA1"),
+        WR("DNEGATE"),
+    L("MSTA1"), WR("EXIT")]
+    )
+    compiler.compile_colon("*/MOD",
+        [WR(">R"), WR("M*"), WR("R>"), WR("M/MOD"), WR("EXIT")]
+    )
+    compiler.compile_colon("*/",
+        [WR("*/MOD"), WR("SWAP"), WR("DROP"), WR("EXIT")]
+    )
 
-    # # Memory Alignment
-    # compiler.compile_colon("CELL-",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("CELL+",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("CELLS",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("ALIGNED",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("BL",
-    #     []#TODO
-    # )
-    # compiler.compile_colon(">CHAR",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("DEPTH",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("PICK",
-    #     []#TODO
-    # )
+    # Memory Alignment
+    compiler.compile_colon("CELL+",
+        [WR("doLIT"), compiler.cell_size, WR("+"), WR("EXIT")]
+    )
+    compiler.compile_colon("CELL-",
+        [WR("doLIT"), 0-compiler.cell_size, WR("+"), WR("EXIT")]
+    )
+    compiler.compile_colon("CELLS",
+        [WR("doLIT"), compiler.cell_size, WR("*"), WR("EXIT")]
+    )
+    compiler.compile_colon("ALIGNED",
+        [WR("DUP"), WR("doLIT"), 0, WR("doLIT"), compiler.cell_size,
+        WR("UM/MOD"), WR("DROP"), WR("DUP"),
+        WR("?branch"), LR("ALGN1"),
+        WR("doLIT"), compiler.cell_size, WR("SWAP"), WR("-"),
+    L("ALGN1"), WR("+"), WR("EXIT")]
+    )
+    compiler.compile_colon("BL",
+        [WR("doLIT"), 32, WR("EXIT")]
+    )
+    compiler.compile_colon(">CHAR",
+        [WR("doLIT"), 0x07F, WR("AND"), WR("DUP"),
+        WR("doLIT"), 127, WR("BL"), WR("WITHIN"),
+        WR("?branch"), LR("TCHA1"),
+        WR("DROP"), WR("doLIT"), ord('_'),
+    LR("TCHA1"), WR("EXIT")]
+    )
+    compiler.compile_colon("DEPTH",
+        [WR("SP@"), WR("SP0"), WR("@"), WR("SWAP"), WR("-"),
+        WR("doLIT"), compiler.cell_size, WR("/"), WR("EXIT")]
+    )
+    compiler.compile_colon("PICK",
+        [WR("doLIT"), 1, WR("+"), WR("CELLS"),
+        WR("SP@"), WR("+"), WR("@"), WR("EXIT")]
+    )
 
     # # Memory Access
     # compiler.compile_colon("+!",
@@ -308,12 +341,27 @@ def bootstrap_16bits_eforth():
     return compiler
 
 if __name__ == "__main__":
-    from more_itertools import grouper
+    from more_itertools import grouper, peekable
     c = bootstrap_16bits_eforth()
-    for a in c.name_tokens_iterator():
-        print(c.read_word_name(a), " xt: ", hex(c.read_execution_token_address(a)))
+    name_tokens_iterator = peekable(c.name_tokens_iterator())
+    try:
+        while True:
+            name_token = next(name_tokens_iterator)
+            next_name_token = name_tokens_iterator.peek()
+            first_xt_address = c.read_execution_token_address(name_token)
+            cells_to_show = 20
+            # last_xt_address = c.read_execution_token_address(next_name_token)
+            print(c.read_word_name(name_token), " xt: ", hex(first_xt_address))
+            print([hex(x) for x in range(first_xt_address,first_xt_address+cells_to_show*c.cell_size,c.cell_size)])
+            print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[first_xt_address:first_xt_address+cells_to_show*c.cell_size], c.cell_size)])
+            # print("---")
+            # print([hex(x) for x in range(last_xt_address,first_xt_address+c.cell_size,c.cell_size)])
+            # print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[last_xt_address:first_xt_address+c.cell_size], c.cell_size)])
+            print("####")
+    except StopIteration:
+        print("Finished listing words")
     
     # xt = c.read_execution_token_address(c.lookup_word(WordReference("?DUP")))
     # print(c.memory[xt:xt+6])
-    print([hex(x) for x in range(0x348,0x348+18,2)])
-    print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[0x348:0x348+18], 2)])
+    # print([hex(x) for x in range(0x348,0x348+18,2)])
+    # print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[0x348:0x348+18], 2)])

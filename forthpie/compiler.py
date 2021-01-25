@@ -153,7 +153,7 @@ class Compiler(MemoryManipulator):
 
         for token in tokens:
             if isinstance(token, str):
-                pass # TODO
+                raise Exception("TODO") # TODO
             elif isinstance(token, int):
                 for i, b in enumerate(token.to_bytes(self.cell_size, "big", signed=True)):
                     self.memory[self.code_address+i] = b
@@ -169,7 +169,7 @@ class Compiler(MemoryManipulator):
                 self.write_cell_at_address(self.code_address, label_addresses[token.name])
                 self.code_address += self.cell_size
             else:
-                raise Exception("Unknown token")
+                raise Exception(f"Unknown token: {token}")
     
     def compile_colon(self, name, tokens, lexicon_bits=0):
         self.compile_colon_header(lexicon_bits, name)

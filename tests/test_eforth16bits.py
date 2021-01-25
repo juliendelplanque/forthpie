@@ -19,6 +19,11 @@ import forthpie.eforth16bits as eforth16bits
             id="XOR"
         ),
         pytest.param(
+            [WordReference("doLIT"),0b010101,WordReference("doLIT"),0b010001,WordReference("OR"),WordReference("BYE")],
+            [0b010101],
+            id="OR"
+        ),
+        pytest.param(
             [WordReference("doLIT"),1,WordReference("doLIT"),1,WordReference("UM+"),WordReference("BYE")],
             [2,0],
             id="UMPlus"
@@ -111,7 +116,22 @@ import forthpie.eforth16bits as eforth16bits
         pytest.param(
             [WordReference("doLIT"), 1,WordReference("NEGATE"),WordReference("BYE")],
             [0xFFFF],
-            id="NEGATE"
+            id="1 NEGATE"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 3,WordReference("NEGATE"),WordReference("BYE")],
+            [0b1111111111111101],
+            id="3 NEGATE"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), -1,WordReference("NEGATE"),WordReference("BYE")],
+            [1],
+            id="-1 NEGATE"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), -32768,WordReference("NEGATE"),WordReference("BYE")],
+            [32768],
+            id="-32768 NEGATE"
         ),
         pytest.param(
             [WordReference("doLIT"), -2, WordReference("doLIT"), 1, WordReference("+"),WordReference("BYE")],
@@ -153,6 +173,61 @@ import forthpie.eforth16bits as eforth16bits
             [0, 0],
             id="0 0 1 UM/MOD"
         ),
+        pytest.param(
+            [WordReference("doLIT"), 1, WordReference("doLIT"), 0, WordReference("doLIT"), 1, WordReference("UM/MOD"),WordReference("BYE")],
+            [0, 1],
+            id="1 0 1 UM/MOD"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 1, WordReference("doLIT"), 0, WordReference("doLIT"), 2, WordReference("UM/MOD"),WordReference("BYE")],
+            [1, 0],
+            id="1 0 2 UM/MOD"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 3, WordReference("doLIT"), 0, WordReference("doLIT"), 2, WordReference("UM/MOD"),WordReference("BYE")],
+            [1, 1],
+            id="3 0 2 UM/MOD"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 2, WordReference("doLIT"), 2, WordReference("/MOD"),WordReference("BYE")],
+            [0, 1],
+            id="2 2 /MOD"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 3, WordReference("doLIT"), 2, WordReference("/MOD"),WordReference("BYE")],
+            [1, 1],
+            id="3 2 /MOD"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 3, WordReference("doLIT"), 2, WordReference("MOD"),WordReference("BYE")],
+            [3%2],
+            id="3 2 MOD"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 42, WordReference("doLIT"), 5, WordReference("MOD"),WordReference("BYE")],
+            [42%5],
+            id="42 5 MOD"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 3, WordReference("doLIT"), 2, WordReference("/"),WordReference("BYE")],
+            [3//2],
+            id="3 2 /"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 42, WordReference("doLIT"), 5, WordReference("/"),WordReference("BYE")],
+            [42//5],
+            id="42 5 /"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 3, WordReference("doLIT"), 2, WordReference("*"),WordReference("BYE")],
+            [3*2],
+            id="3 2 *"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 42, WordReference("doLIT"), 5, WordReference("*"),WordReference("BYE")],
+            [42*5],
+            id="42 5 *"
+        ),
     ]
 )
 def test_WORD(to_compile, expected_data_stack):
@@ -166,9 +241,11 @@ def test_WORD(to_compile, expected_data_stack):
     compiler.compile_word_body(to_compile)
 
     initial_data_stack_pointer = interpreter.data_stack_pointer
+    initial_return_stack_pointer = interpreter.return_stack_pointer
     interpreter.memory = compiler.memory
     interpreter.start()
     assert interpreter.data_stack_pointer == initial_data_stack_pointer + len(expected_data_stack)*interpreter.cell_size
+    assert interpreter.return_stack_pointer == initial_return_stack_pointer
 
     for i, stack_data in enumerate(expected_data_stack):
         assert interpreter.read_cell_at_address(interpreter.data_stack_pointer-len(expected_data_stack)*interpreter.cell_size+i*interpreter.cell_size) == stack_data
