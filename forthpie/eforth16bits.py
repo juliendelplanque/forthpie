@@ -243,7 +243,7 @@ def bootstrap_16bits_eforth():
     )
     compiler.compile_colon("*",
         [WR("UM*"), WR("DROP"), WR("EXIT")]
-    )
+    ) #TODO:from here, test words...
     compiler.compile_colon("M*",
         [WR("2DUP"), WR("XOR"), WR("0<"), WR(">R"),
         WR("ABS"), WR("SWAP"), WR("ABS"), WR("UM*"),
@@ -295,43 +295,73 @@ def bootstrap_16bits_eforth():
         WR("SP@"), WR("+"), WR("@"), WR("EXIT")]
     )
 
-    # # Memory Access
-    # compiler.compile_colon("+!",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("2!",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("2@",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("COUNT",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("HERE",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("PAD",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("TIB",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("@EXECUTE",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("CMOVE",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("FILL",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("-TRAILING",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("PACK$",
-    #     []#TODO
-    # )
+    # Memory Access
+    compiler.compile_colon("+!",
+        [WR("SWAP"), WR("OVER"), WR("@"), WR("+"),
+        WR("SWAP"), WR("!"), WR("EXIT")]
+    )
+    compiler.compile_colon("2!",
+        [WR("SWAP"), WR("OVER"), WR("!"),
+        WR("CELL+"), WR("!"), WR("EXIT")]
+    )
+    compiler.compile_colon("2@",
+        [WR("DUP"), WR("CELL+"), WR("@"),
+        WR("SWAP"), WR("@"), WR("EXIT")]
+    )
+    compiler.compile_colon("COUNT",
+        [WR("DUP"), WR("doLIT"), 1, WR("+"),
+        WR("SWAP"), WR("C@"), WR("EXIT")]
+    )
+    compiler.compile_colon("HERE",
+        [WR("CP"), WR("@"), WR("EXIT")]
+    )
+    compiler.compile_colon("PAD",
+        [WR("HERE"), WR("doLIT"), 80, WR("+"), WR("EXIT")]
+    )
+    compiler.compile_colon("TIB",
+        [WR("#TIB"), WR("CELL+"), WR("@"), WR("EXIT")]
+    )
+    compiler.compile_colon("@EXECUTE",
+        [WR("@"), WR("?DUP"),
+        WR("?branch"), LR("EXE1"),
+        WR("EXECUTE"),
+    L("EXE1"), WR("EXIT")]
+    )
+    compiler.compile_colon("CMOVE",
+        [WR(">R"),
+        WR("branch"), LR("CMOV2"),
+    L("CMOV1"), WR(">R"), WR("DUP"), WR("C@"),
+        WR("R@"), WR("C!"),
+        WR("doLIT"), 1, WR("+"),
+        WR("R>"), WR("doLIT"), 1, WR("+"),
+    L("CMOV2"), WR("next"), LR("CMOV1"),
+        WR("2DROP"), WR("EXIT")]
+    )
+    compiler.compile_colon("FILL",
+        [WR("SWAP"), WR(">R"), WR("SWAP"),
+        WR("branch"), LR("FILL2"),
+    L("FILL1"), WR("2DUP"), WR("C!"), WR("doLIT"), 1, WR("+"),
+    L("FILL2"), WR("next"), LR("FILL1"),
+        WR("2DROP"), WR("EXIT")]
+    )
+    compiler.compile_colon("-TRAILING",
+        [WR(">R"),
+        WR("branch"), LR("DTRA2"),
+    L("DTRA1"), WR("BL"), WR("OVER"), WR("R@"), WR("+"), WR("C@"), WR("<"),
+        WR("?branch"), LR("DTRA2"),
+        WR("R>"), WR("doLIT"), 1, WR("+"), WR("EXIT"),
+    L("DTRA2"), WR("next"), LR("DTRA1"),
+        WR("doLIT"), 0, WR("EXIT")]
+    )
+    compiler.compile_colon("PACK$",
+        [WR("ALIGNED"), WR("DUP"), WR(">R"),
+        WR("OVER"), WR("DUP"), WR("doLIT"), 0,
+        WR("doLIT"), compiler.cell_size, WR("UM/MOD"), WR("DROP"),
+        WR("-"), WR("OVER"), WR("+"),
+        WR("doLIT"), 0, WR("SWAP"), WR("!"),
+        WR("2DUP"), WR("C!"), WR("doLIT"), 1, WR("+"),
+        WR("SWAP"), WR("CMOVE"), WR("R>"), WR("EXIT")]
+    )
 
     # #
     # compiler.compile_colon("",
