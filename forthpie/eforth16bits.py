@@ -284,7 +284,7 @@ def bootstrap_16bits_eforth():
         WR("doLIT"), 127, WR("BL"), WR("WITHIN"),
         WR("?branch"), LR("TCHA1"),
         WR("DROP"), WR("doLIT"), ord('_'),
-    LR("TCHA1"), WR("EXIT")]
+    L("TCHA1"), WR("EXIT")]
     )
     compiler.compile_colon("DEPTH",
         [WR("SP@"), WR("SP0"), WR("@"), WR("SWAP"), WR("-"),
