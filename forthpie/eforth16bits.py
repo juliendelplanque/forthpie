@@ -55,10 +55,10 @@ def bootstrap_16bits_eforth():
     compiler.compile_primitive("C!")
     compiler.compile_primitive("C@")
     compiler.compile_primitive("RP@")
-    compiler.compile_primitive("RP!")
+    compiler.compile_primitive("RP!", COMPILE_ONLY)
     compiler.compile_primitive("R>")
     compiler.compile_primitive("R@")
-    compiler.compile_primitive(">R")
+    compiler.compile_primitive(">R", COMPILE_ONLY)
     compiler.compile_primitive("SP@")
     compiler.compile_primitive("SP!")
     compiler.compile_primitive("DROP")
@@ -243,7 +243,7 @@ def bootstrap_16bits_eforth():
     )
     compiler.compile_colon("*",
         [WR("UM*"), WR("DROP"), WR("EXIT")]
-    ) #TODO:from here, test words...
+    )
     compiler.compile_colon("M*",
         [WR("2DUP"), WR("XOR"), WR("0<"), WR(">R"),
         WR("ABS"), WR("SWAP"), WR("ABS"), WR("UM*"),
@@ -285,7 +285,7 @@ def bootstrap_16bits_eforth():
         WR("?branch"), LR("TCHA1"),
         WR("DROP"), WR("doLIT"), ord('_'),
     L("TCHA1"), WR("EXIT")]
-    )
+    )#TODO:from here, test words...
     compiler.compile_colon("DEPTH",
         [WR("SP@"), WR("SP0"), WR("@"), WR("SWAP"), WR("-"),
         WR("doLIT"), compiler.cell_size, WR("/"), WR("EXIT")]
@@ -363,7 +363,469 @@ def bootstrap_16bits_eforth():
         WR("SWAP"), WR("CMOVE"), WR("R>"), WR("EXIT")]
     )
 
-    # #
+    # Numeric output, single precision
+    compiler.compile_colon("DIGIT",
+        [WR("doLIT"), 9, WR("OVER"), WR("<"),
+        WR("doLIT"), 7, WR("AND"), WR("+"),
+        WR("doLIT"), ord('0'), WR("+"), WR("EXIT")]
+    )
+    compiler.compile_colon("EXTRACT",
+        [WR("doLIT"), 0, WR("SWAP"), WR("UM/MOD"),
+        WR("SWAP"), WR("DIGIT"), WR("EXIT")]
+    )
+    compiler.compile_colon("<#",
+        code("PAD HLD ! EXIT")
+    )
+    compiler.compile_colon("HOLD",
+        [WR("HLD"), WR("@"), WR("doLIT"), 1, WR("-"),
+        WR("DUP"), WR("HLD"), WR("!"), WR("C!"), WR("EXIT")]
+    )
+    compiler.compile_colon("#",
+        code("BASE @ EXTRACT HOLD EXIT")
+    )
+    compiler.compile_colon("#S",
+    [L("DIGS1"), WR("#"), WR("DUP"),
+        WR("?branch"), LR("DIGS2"),
+        WR("branch"), LR("DIGS1"),
+    L("DIGS2"), WR("EXIT")]
+    )
+    compiler.compile_colon("SIGN",
+        [WR("0<"),
+        WR("?branch"), LR("SIGN1"),
+        WR("doLIT"), ord("-"), WR("HOLD"),
+    L("SIGN1"), WR("EXIT")]
+    )
+    compiler.compile_colon("#>",
+        [WR("DROP"), WR("HLD"), WR("@"),
+        WR("PAD"), WR("OVER"), WR("-"), WR("EXIT")]
+    )
+    compiler.compile_colon("str",
+        [WR("DUP"), WR(">R"), WR("ABS"),
+        WR("<#"), WR("#S"), WR("R>"),
+        WR("SIGN"), WR("#>"), WR("EXIT")]
+    )
+    compiler.compile_colon("HEX",
+        [WR("doLIT"), 16, WR("BASE"), WR("!"), WR("EXIT")]
+    )
+    compiler.compile_colon("DECIMAL",
+        [WR("doLIT"), 10, WR("BASE"), WR("!"), WR("EXIT")]
+    )
+
+    # Numeric input, single precision
+    compiler.compile_colon("DIGIT?",
+        [WR(">R"), WR("doLIT"), ord('0'), WR("-"),
+        WR("doLIT"), 9, WR("OVER"), WR("<"),
+        WR("?branch"), LR("DGTQ1"),
+        WR("doLIT"), 7, WR("-"),
+        WR("DUP"), WR("doLIT"), 10, WR("<"), WR("OR"),
+    L("DGTQ1"), WR("DUP"), WR("R>"), WR("U<"), WR("EXIT")]
+    )
+    compiler.compile_colon("NUMBER?",
+        [WR("BASE"), WR("@"), WR(">R"), WR("doLIT"), 0, WR("OVER"), WR("COUNT"),
+        WR("OVER"), WR("C@"), WR("doLIT"), ord('$'), WR("="),
+        WR("?branch"), LR("NUMQ1"),
+        WR("HEX"), WR("SWAP"), WR("doLIT"), 1, WR("+"),
+        WR("SWAP"), WR("doLIT"), 1, WR("-"),
+    L("NUMQ1"), WR("OVER"), WR("C@"), WR("doLIT"), ord('-'), WR("="), WR(">R"),
+        WR("SWAP"), WR("R@"), WR("-"), WR("SWAP"), WR("R@"), WR("+"), WR("?DUP"),
+        WR("?branch"), LR("NUMQ6"),
+        WR("doLIT"), 1, WR("-"), WR(">R"),
+    L("NUMQ2"), WR("DUP"), WR(">R"), WR("C@"), WR("BASE"), WR("@"), WR("DIGIT?"),
+        WR("?branch"), LR("NUMQ4"),
+        WR("SWAP"), WR("BASE"), WR("@"), WR("*"), WR("+"), WR("R>"),
+        WR("doLIT"), 1, WR("+"),
+        WR("next"), LR("NUMQ2"),
+        WR("R@"), WR("SWAP"), WR("DROP"),
+        WR("?branch"), LR("NUMQ3"),
+        WR("NEGATE"),
+    L("NUMQ3"), WR("SWAP"),
+        WR("branch"), LR("NUMQ5"),
+    L("NUMQ4"), WR("R>"), WR("R>"), WR("2DROP"), WR("2DROP"), WR("doLIT"), 0,
+    L("NUMQ5"), WR("DUP"),
+    L("NUMQ6"), WR("R>"), WR("2DROP"),
+        WR("R>"), WR("BASE"), WR("!"), WR("EXIT")]
+    )
+
+    # Basic I/O
+    compiler.compile_colon("?KEY",
+        [WR("'?KEY"), WR("@EXECUTE"), WR("EXIT")]
+    )
+    compiler.compile_colon("KEY",
+    [L("KEY1"), WR("?KEY"),
+        WR("?branch"), LR("KEY1"),
+        WR("EXIT")]
+    )
+    compiler.compile_colon("EMIT",
+        [WR("'EMIT"), WR("@EXECUTE"), WR("EXIT")]
+    )
+    compiler.compile_colon("NUF?",
+        [WR("?KEY"), WR("DUP"),
+        WR("?branch"), LR("NUFQ1"),
+        WR("2DROP"), WR("KEY"), WR("doLIT"), 13, WR("="), # 13 = CR
+    L("NUFQ1"), WR("EXIT")]
+    )
+    compiler.compile_colon("PACE",
+        [WR("doLIT"), 11, WR("EMIT"), WR("EXIT")]
+    )
+    compiler.compile_colon("SPACE",
+        [WR("BL"), WR("EMIT"), WR("EXIT")]
+    )
+    compiler.compile_colon("SPACES",
+        [WR("doLIT"), 0, WR("MAX"), WR(">R"),
+        WR("branch"), LR("CHAR2"),
+    L("CHAR1"), WR("SPACE"),
+    L("CHAR2"), WR("next"), LR("CHAR1"),
+        WR("EXIT")]
+    )
+    compiler.compile_colon("TYPE",
+        [WR(">R"),
+        WR("branch"), LR("TYPE2"),
+    L("TYPE1"), WR("DUP"), WR("C@"), WR("EMIT"),
+        WR("doLIT"), 1, WR("+"),
+    L("TYPE2"), WR("next"), LR("TYPE1"),
+        WR("DROP"), WR("EXIT")]
+    )
+    compiler.compile_colon("CR",
+        [WR("doLIT"), 13, WR("EMIT"), # CR = 13
+        WR("doLIT"), 10, WR("EMIT"), WR("EXIT")] #LF = 10
+    )
+    compiler.compile_colon("do$",
+        [WR("R>"), WR("R@"), WR("R>"), WR("COUNT"), WR("+"),
+        WR("ALIGNED"), WR(">R"), WR("SWAP"), WR(">R"), WR("EXIT")],
+        COMPILE_ONLY
+    )
+    compiler.compile_colon('$"|',
+        [WR("do$"), WR("EXIT")],
+        COMPILE_ONLY
+    )
+    compiler.compile_colon('."|',
+        [WR("do$"), WR("COUNT"), WR("TYPE"), WR("EXIT")],
+        COMPILE_ONLY
+    )
+    compiler.compile_colon(".R",
+        [WR(">R"), WR("str"), WR("R>"), WR("OVER"), WR("-"),
+        WR("SPACES"), WR("TYPE"), WR("EXIT")]
+    )
+    compiler.compile_colon("U.R",
+        [WR(">R"), WR("<#"), WR("#S"), WR("#>"),
+        WR("R>"), WR("OVER"), WR("-"),
+        WR("SPACES"), WR("TYPE"), WR("EXIT")]
+    )
+    compiler.compile_colon("U.",
+        [WR("<#"), WR("#S"), WR("#>"),
+        WR("SPACE"), WR("TYPE"), WR("EXIT")]
+    )
+    compiler.compile_colon(".",
+        []#TODO
+    )
+    compiler.compile_colon("?",
+        []#TODO
+    )
+
+    # Parsing
+    compiler.compile_colon("parse",
+        []#TODO
+    )
+    compiler.compile_colon("PARSE",
+        []#TODO
+    )
+    compiler.compile_colon(".(",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("(",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("\\",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("CHAR",
+        []#TODO
+    )
+    compiler.compile_colon("TOKEN",
+        []#TODO
+    )
+    compiler.compile_colon("WORD",
+        []#TODO
+    )
+
+    # Dictionary search
+    compiler.compile_colon("NAME>",
+        []#TODO
+    )
+    compiler.compile_colon("SAME?",
+        []#TODO
+    )
+    compiler.compile_colon("find",
+        []#TODO
+    )
+    compiler.compile_colon("NAME?",
+        []#TODO
+    )
+
+    # Terminal response
+    compiler.compile_colon("^H",
+        []#TODO
+    )
+    compiler.compile_colon("TAP",
+        []#TODO
+    )
+    compiler.compile_colon("kTAP",
+        []#TODO
+    )
+    compiler.compile_colon("accept",
+        []#TODO
+    )
+    compiler.compile_colon("EXPECT",
+        []#TODO
+    )
+    compiler.compile_colon("QUERY",
+        []#TODO
+    )
+
+    # Error handling
+    compiler.compile_colon("CATCH",
+        []#TODO
+    )
+    compiler.compile_colon("THROW",
+        []#TODO
+    )
+    compiler.compile_colon("NULL$",
+        []#TODO
+    )
+    compiler.compile_colon("ABORT",
+        []#TODO
+    )
+    compiler.compile_colon('abort"',
+        [],#TODO
+        COMPILE_ONLY
+    )
+
+    # The text interpreter
+    compiler.compile_colon("$INTERPRET",
+        []#TODO
+    )
+    compiler.compile_colon("[",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon(".OK",
+        []#TODO
+    )
+    compiler.compile_colon("?STACK",
+        []#TODO
+    )
+    compiler.compile_colon("EVAL",
+        []#TODO
+    )
+
+    # Shell
+    compiler.compile_colon("PRESET",
+        []#TODO
+    )
+    compiler.compile_colon("xio",
+        [],#TODO
+        COMPILE_ONLY
+    )
+    compiler.compile_colon("FILE",
+        []#TODO
+    )
+    compiler.compile_colon("HAND",
+        []#TODO
+    )
+    compiler.compile_colon("I/O",
+        []#TODO
+    )
+    compiler.compile_colon("CONSOLE",
+        []#TODO
+    )
+    compiler.compile_colon("QUIT",
+        []#TODO
+    )
+
+    # The compiler
+    compiler.compile_colon("'",
+        []#TODO
+    )
+    compiler.compile_colon("ALLOT",
+        []#TODO
+    )
+    compiler.compile_colon(",",
+        []#TODO
+    )
+    compiler.compile_colon("[COMPILE]",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("COMPILE",
+        [],#TODO
+        COMPILE_ONLY
+    )
+    compiler.compile_colon("LITERAL",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("$,",
+        []#TODO
+    )
+    compiler.compile_colon("RECURSE",
+        [],#TODO
+        IMMEDIATE
+    )
+    
+    # Structures
+    compiler.compile_colon("FOR",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("BEGIN",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("NEXT",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("UNTIL",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("AGAIN",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("IF",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("AHEAD",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("REPEAT",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("THEN",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("AFT",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("ELSE",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon("WHILE",
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon('ABORT"',
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon('$"',
+        [],#TODO
+        IMMEDIATE
+    )
+    compiler.compile_colon('."',
+        [],#TODO
+        IMMEDIATE
+    )
+
+    # Name compiler
+    compiler.compile_colon("?UNIQUE",
+        []#TODO
+    )
+    compiler.compile_colon("$,n",
+        []#TODO
+    )
+
+    # Forth compiler
+    compiler.compile_colon("$COMPILE",
+        []#TODO
+    )
+    compiler.compile_colon("OVERT",
+        []#TODO
+    )
+    compiler.compile_colon(";",
+        [],#TODO
+        IMMEDIATE+COMPILE_ONLY
+    )
+    compiler.compile_colon("]",
+        []#TODO
+    )
+    compiler.compile_colon("call,",
+        []#TODO
+    )
+    compiler.compile_colon(":",
+        []#TODO
+    )
+    compiler.compile_colon("IMMEDIATE",
+        []#TODO
+    )
+
+    # Defining words
+    compiler.compile_colon("USER",
+        []#TODO
+    )
+    compiler.compile_colon("CREATE",
+        []#TODO
+    )
+    compiler.compile_colon("VARIABLE",
+        []#TODO
+    )
+
+    # Tools
+    compiler.compile_colon("_TYPE",
+        []#TODO
+    )
+    compiler.compile_colon("dm+",
+        []#TODO
+    )
+    compiler.compile_colon("DUMP",
+        []#TODO
+    )
+    compiler.compile_colon(".S",
+        []#TODO
+    )
+    compiler.compile_colon("!CSP",
+        []#TODO
+    )
+    compiler.compile_colon("?CSP",
+        []#TODO
+    )
+    compiler.compile_colon(">NAME",
+        []#TODO
+    )
+    compiler.compile_colon(".ID",
+        []#TODO
+    )
+    compiler.compile_colon("SEE",
+        []#TODO
+    )
+    compiler.compile_colon("WORDS",
+        []#TODO
+    )
+
+    # Hardware reset
+    compiler.compile_colon("VER",
+        []#TODO
+    )
+    compiler.compile_colon("hi",
+        []#TODO
+    )
+    compiler.compile_colon("'BOOT",
+        []#TODO
+    )
+    compiler.compile_colon("COLD",
+        []#TODO
+    )
+
     # compiler.compile_colon("",
     #     []#TODO
     # )

@@ -228,6 +228,116 @@ import forthpie.eforth16bits as eforth16bits
             [42*5],
             id="42 5 *"
         ),
+        pytest.param(
+            [WordReference("doLIT"), 42, WordReference("CELL+"),WordReference("BYE")],
+            [44],
+            id="42 CELL+"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 42, WordReference("CELL-"),WordReference("BYE")],
+            [40],
+            id="42 CELL-"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 42, WordReference("CELLS"),WordReference("BYE")],
+            [42*2],
+            id="42 CELLS"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 42, WordReference("ALIGNED"),WordReference("BYE")],
+            [42],
+            id="42 ALIGNED"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 41, WordReference("ALIGNED"),WordReference("BYE")],
+            [42],
+            id="41 ALIGNED"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 40, WordReference("ALIGNED"),WordReference("BYE")],
+            [40],
+            id="40 ALIGNED"
+        ),
+        pytest.param(
+            [WordReference("BL"),WordReference("BYE")],
+            [ord(" ")],
+            id="BL"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), ord("a"), WordReference(">CHAR"),WordReference("BYE")],
+            [ord("a")],
+            id="a >CHAR"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 0, WordReference(">CHAR"),WordReference("BYE")],
+            [ord("_")],
+            id="0 >CHAR"
+        ),
+        # pytest.param(
+        #     [WordReference("doLIT"), 40, WordReference("SP0"), WordReference("!"), WordReference("SP0"), WordReference("@"), WordReference("BYE")],
+        #     [40],
+        #     id="40 SP0 ! SP0 @" #TODO: can not work because SP0 & co are compile only, they call doVAR!
+        # ),
+        # pytest.param(
+        #     [WordReference("doLIT"), 40, WordReference("SP0"), WordReference("!"), WordReference("doLIT"), 42, WordReference("SP!"), WordReference("DEPTH"), WordReference("BYE")],
+        #     [1],
+        #     id="40 SP0 ! 42 SP! DEPTH" #TODO: can not work because SP0 & co are compile only, they call doVAR!
+        # ),
+        pytest.param(
+            [WordReference("doLIT"), 10, WordReference("doLIT"), 42, WordReference("!"), WordReference("doLIT"), 1, WordReference("doLIT"), 42, WordReference("+!"), WordReference("doLIT"), 42, WordReference("@"), WordReference("BYE")],
+            [11],
+            id="10 42 ! 1 42 +! 42 @"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 0, WordReference("DIGIT"),WordReference("BYE")],
+            [ord("0")],
+            id="0 DIGIT"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 1, WordReference("DIGIT"),WordReference("BYE")],
+            [ord("1")],
+            id="1 DIGIT"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 2, WordReference("DIGIT"),WordReference("BYE")],
+            [ord("2")],
+            id="2 DIGIT"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 3, WordReference("DIGIT"),WordReference("BYE")],
+            [ord("3")],
+            id="3 DIGIT"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 4, WordReference("DIGIT"),WordReference("BYE")],
+            [ord("4")],
+            id="4 DIGIT"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 5, WordReference("DIGIT"),WordReference("BYE")],
+            [ord("5")],
+            id="5 DIGIT"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 6, WordReference("DIGIT"),WordReference("BYE")],
+            [ord("6")],
+            id="6 DIGIT"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 7, WordReference("DIGIT"),WordReference("BYE")],
+            [ord("7")],
+            id="7 DIGIT"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 8, WordReference("DIGIT"),WordReference("BYE")],
+            [ord("8")],
+            id="8 DIGIT"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 9, WordReference("DIGIT"),WordReference("BYE")],
+            [ord("9")],
+            id="9 DIGIT"
+        ),
     ]
 )
 def test_WORD(to_compile, expected_data_stack):
