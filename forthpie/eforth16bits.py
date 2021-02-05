@@ -516,53 +516,107 @@ def bootstrap_16bits_eforth():
         WR("SPACE"), WR("TYPE"), WR("EXIT")]
     )
     compiler.compile_colon(".",
-        []#TODO
+        [WR("BASE"), WR("@"), WR("doLIT"), 10, WR("XOR"),
+        WR("?branch"), LR("DOT1"),
+        WR("U."),WR("EXIT"),
+    L("DOT1"), WR("str"), WR("SPACE"),WR("TYPE"), WR("EXIT")]
     )
     compiler.compile_colon("?",
-        []#TODO
+        [WR("@"), WR("."), WR("EXIT")]
     )
 
     # Parsing
     compiler.compile_colon("parse",
-        []#TODO
+        [WR("tmp"), WR("!"), WR("OVER"), WR(">R"), WR("DUP"),
+        WR("?branch"), LR("PARS8"),
+        WR("doLIT"), 1, WR("-"), WR("tmp"), WR("@"), WR("BL"), WR("="),
+        WR("?branch"), LR("PARS3"),
+        WR(">R"),
+    L("PARS1"), WR("BL"), WR("OVER"), WR("C@"),
+        WR("-"), WR("0<"), WR("NOT"),
+        WR("?branch"), LR("PARS2"),
+        WR("doLIT"), 1, WR("+"),
+        WR("next"), LR("PARS1"),
+        WR("R>"), WR("DROP"), WR("doLIT"), 0, WR("DUP"), WR("EXIT"),
+    L("PARS2"), WR("R>"),
+    L("PARS3"), WR("OVER"), WR("SWAP"),
+        WR(">R"),
+    L("PARS4"), WR("tmp"), WR("@"), WR("OVER"), WR("C@"), WR("-"),
+        WR("tmp"), WR("@"), WR("BL"), WR("="),
+        WR("?branch"), LR("PARS5"),
+        WR("0<"),
+    L("PARS5"), WR("?branch"), LR("PARS6"),
+        WR("doLIT"), 1, WR("+"),
+        WR("next"), LR("PARS4"),
+        WR("DUP"), WR(">R"),
+        WR("branch"), LR("PARS7"),
+    L("PARS6"), WR("R>"), WR("DROP"), WR("DUP"),
+        WR("doLIT"), 1, WR("+"), WR(">R"),
+    L("PARS7"), WR("OVER"), WR("-"),
+        WR("R>"), WR("R>"), WR("-"), WR("EXIT"),
+    L("PARS8"), WR("OVER"), WR("R>"), WR("-"), WR("EXIT")]
     )
     compiler.compile_colon("PARSE",
-        []#TODO
+        [WR(">R"), WR("TIB"), WR(">IN"), WR("@"), WR("+"),
+        WR("#TIB"), WR("@"), WR(">IN"), WR("@"), WR("-"),
+        WR("R>"), WR("parse"), WR(">IN"), WR("+!"), WR("EXIT")]
     )
     compiler.compile_colon(".(",
-        [],#TODO
+        [WR("doLIT"), ord('('), WR("PARSE"), WR("TYPE"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("(",
-        [],#TODO
+        [WR("doLIT"), ord(')'), WR("PARSE"), WR("2DROP"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("\\",
-        [],#TODO
+        [WR("#TIB"), WR("@"), WR(">IN"), WR("!"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("CHAR",
-        []#TODO
+        [WR("BL"), WR("PARSE"), WR("DROP"), WR("C@"), WR("EXIT")]
     )
     compiler.compile_colon("TOKEN",
-        []#TODO
+        [WR("BL"), WR("PARSE"), WR("doLIT"), 31, WR("MIN"),
+        WR("NP"), WR("@"), WR("OVER"), WR("-"), WR("CELL-"),
+        WR("PACK$"), WR("EXIT")]
     )
     compiler.compile_colon("WORD",
-        []#TODO
+        [WR("PARSE"), WR("HERE"), WR("PACK$"), WR("EXIT")]
     )
 
     # Dictionary search
     compiler.compile_colon("NAME>",
-        []#TODO
+        [WR("CELL-"), WR("CELL-"), WR("@"), WR("EXIT")]
     )
     compiler.compile_colon("SAME?",
-        []#TODO
+        [WR(">R"),
+        WR("branch"), LR("SAME2"),
+    L("SAME1"), WR("OVER"), WR("R@"), WR("CELLS"), WR("+"), WR("@"),
+        WR("OVER"), WR("R@"), WR("CELLS"), WR("+"), WR("@"),
+        WR("-"), WR("?DUP"),
+        WR("?branch"), LR("SAME2"), 
+        WR("R>"), WR("DROP"), WR("EXIT"),
+    L("SAME2"), WR("next"), WR("SAME1"),
+        WR("doLIT"), 0, WR("EXIT")]
     )
     compiler.compile_colon("find",
-        []#TODO
+        [WR("SWAP"), WR("DUP"), WR("C@"),
+        WR("doLIT"), compiler.cell_size, WR("/"), WR("tmp"), WR("!")]
     )
     compiler.compile_colon("NAME?",
-        []#TODO
+        [WR("CONTEXT"), WR("DUP"), WR("2@"), WR("XOR"),
+        WR("?branch"), LR("NAMQ1"),
+        WR("CELL-"),
+    L("NAMQ1"), WR(">R"),
+    L("NAMQ2"), WR("R>"), WR("CELL+"), WR("DUP"), WR(">R"),
+        WR("@"), WR("?DUP"),
+        WR("?branch"), LR("NAMQ3")
+        WR("find"), WR("?DUP"),
+        WR("?branch"), LR("NAMQ2"),
+        WR("R>"), WR("DROP"), WR("EXIT"),
+    L("NAMQ3"), WR("R>"), WR("DROP"),
+        WR("doLIT"), 0, WR("EXIT")]
     )
 
     # Terminal response
@@ -829,6 +883,16 @@ def bootstrap_16bits_eforth():
     # compiler.compile_colon("",
     #     []#TODO
     # )
+
+    # Initialize memory with default user variable values
+    # TODO
+    # init_values = [
+    #     SPP,
+    #     RPP,
+        
+    # ]
+    # for address, value in zip(range(COLDD, compiler.cell_size*len(init_values), compiler.cell_size), init_values):
+    #     compiler.write_cell_at_address(address, value)
 
     return compiler
 
