@@ -728,26 +728,45 @@ def bootstrap_16bits_eforth():
 
     # Shell
     compiler.compile_colon("PRESET",
-        []#TODO
+        [WR("SP0"), WR("@"), WR("SP!"),
+        WR("doLIT"), TIBB, WR("#TIB"), WR("CELL+"), WR("!"), WR("EXIT")]
     )
     compiler.compile_colon("xio",
-        [],#TODO
+        [WR("doLIT"), WR("accept"), WR("'EXPECT"), WR("2!"),
+        WR("'ECHO"), WR("2!"), WR("EXIT")],
         COMPILE_ONLY
     )
     compiler.compile_colon("FILE",
-        []#TODO
+        [WR("doLIT"), WR("PACE"), WR("doLIT"), WR("DROP"),
+        WR("doLIT"), WR("kTAP"), WR("xio"), WR("EXIT")]
     )
     compiler.compile_colon("HAND",
-        []#TODO
+        [WR("doLIT"), WR(".OK"), WR("doLIT"), WR("EMIT"),
+        WR("doLIT"), WR("kTAP"), WR("xio"), WR("EXIT")]
     )
     compiler.compile_colon("I/O",
-        []#TODO
+        [WR("doVAR"), WR("'?KEY"), WR("TX!")]
     )
     compiler.compile_colon("CONSOLE",
-        []#TODO
+        [WR("I/O"), WR("2@"), WR("'?KEY"), WR("2!"),
+        WR("HAND"), WR("EXIT")]
     )
     compiler.compile_colon("QUIT",
-        []#TODO
+        [WR("RP0"), WR("@"), WR("RP!"),
+    L("QUIT1"), WR("["),
+    L("QUIT2"), WR("QUERY"),
+        WR("doLIT"), WR("EVAL"), WR("CATCH"), WR("?DUP"),
+        WR("?branch"), LR("QUIT2"),
+        WR("'PROMPT"), WR("@"), WR("SWAP"),
+        WR("CONSOLE"), WR("NULL$"), WR("OVER"), WR("XOR"),
+        WR("?branch"), LR("QUIT3"),
+        WR("SPACE"), WR("COUNT"), WR("TYPE"),
+        WR('."|'), ' ? ',
+    L("QUIT3"), WR(".OK"), WR("XOR"),
+        WR("?branch"), LR("QUIT4"),
+        WR("doLIT"), 27, WR("EMIT"), # 27 = Error escape
+    L("QUIT4"), WR("PRESET"),
+        WR("branch"), LR("QUIT1") ] 
     )
 
     # The compiler
@@ -947,26 +966,34 @@ def bootstrap_16bits_eforth():
 
     return compiler
 
+def run():
+    from .forth import ForthInterpreter
+    compiler = bootstrap_16bits_eforth()
+    interpreter = ForthInterpreter(compiler.cell_size)
+    interpreter.data_stack_pointer = eforth16bits.SPP
+    interpreter.return_stack_pointer = eforth16bits.RPP
+    #TODO
+
 if __name__ == "__main__":
-    from more_itertools import grouper, peekable
-    c = bootstrap_16bits_eforth()
-    name_tokens_iterator = peekable(c.name_tokens_iterator())
-    try:
-        while True:
-            name_token = next(name_tokens_iterator)
-            next_name_token = name_tokens_iterator.peek()
-            first_xt_address = c.read_execution_token_address(name_token)
-            cells_to_show = 20
-            # last_xt_address = c.read_execution_token_address(next_name_token)
-            print(c.read_word_name(name_token), " xt: ", hex(first_xt_address))
-            print([hex(x) for x in range(first_xt_address,first_xt_address+cells_to_show*c.cell_size,c.cell_size)])
-            print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[first_xt_address:first_xt_address+cells_to_show*c.cell_size], c.cell_size)])
-            # print("---")
-            # print([hex(x) for x in range(last_xt_address,first_xt_address+c.cell_size,c.cell_size)])
-            # print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[last_xt_address:first_xt_address+c.cell_size], c.cell_size)])
-            print("####")
-    except StopIteration:
-        print("Finished listing words")
+    # from more_itertools import grouper, peekable
+    # c = bootstrap_16bits_eforth()
+    # name_tokens_iterator = peekable(c.name_tokens_iterator())
+    # try:
+    #     while True:
+    #         name_token = next(name_tokens_iterator)
+    #         next_name_token = name_tokens_iterator.peek()
+    #         first_xt_address = c.read_execution_token_address(name_token)
+    #         cells_to_show = 20
+    #         # last_xt_address = c.read_execution_token_address(next_name_token)
+    #         print(c.read_word_name(name_token), " xt: ", hex(first_xt_address))
+    #         print([hex(x) for x in range(first_xt_address,first_xt_address+cells_to_show*c.cell_size,c.cell_size)])
+    #         print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[first_xt_address:first_xt_address+cells_to_show*c.cell_size], c.cell_size)])
+    #         # print("---")
+    #         # print([hex(x) for x in range(last_xt_address,first_xt_address+c.cell_size,c.cell_size)])
+    #         # print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[last_xt_address:first_xt_address+c.cell_size], c.cell_size)])
+    #         print("####")
+    # except StopIteration:
+    #     print("Finished listing words")
     
     # xt = c.read_execution_token_address(c.lookup_word(WordReference("?DUP")))
     # print(c.memory[xt:xt+6])
