@@ -597,7 +597,7 @@ def bootstrap_16bits_eforth():
         WR("-"), WR("?DUP"),
         WR("?branch"), LR("SAME2"), 
         WR("R>"), WR("DROP"), WR("EXIT"),
-    L("SAME2"), WR("next"), WR("SAME1"),
+    L("SAME2"), WR("next"), LR("SAME1"),
         WR("doLIT"), 0, WR("EXIT")]
     )
     compiler.compile_colon("find",
@@ -611,7 +611,7 @@ def bootstrap_16bits_eforth():
     L("NAMQ1"), WR(">R"),
     L("NAMQ2"), WR("R>"), WR("CELL+"), WR("DUP"), WR(">R"),
         WR("@"), WR("?DUP"),
-        WR("?branch"), LR("NAMQ3")
+        WR("?branch"), LR("NAMQ3"),
         WR("find"), WR("?DUP"),
         WR("?branch"), LR("NAMQ2"),
         WR("R>"), WR("DROP"), WR("EXIT"),
@@ -621,22 +621,45 @@ def bootstrap_16bits_eforth():
 
     # Terminal response
     compiler.compile_colon("^H",
-        []#TODO
+        [WR(">R"), WR("OVER"), WR("R>"), WR("SWAP"), WR("OVER"), WR("XOR"),
+        WR("?branch"), LR("BACK1"),
+        WR("doLIT"), 8, WR("'ECHO"), WR("@EXECUTE"), WR("doLIT"), 1, WR("-"), # 8 = backspace
+        WR("BL"), WR("'ECHO"), WR("@EXECUTE"),
+        WR("doLIT"), 8, WR("'ECHO"), WR("@EXECUTE"), # 8 = backspace
+    L("BACK1"), WR("EXIT")]
     )
     compiler.compile_colon("TAP",
-        []#TODO
+        [WR("DUP"), WR("'ECHO"), WR("@EXECUTE"),
+        WR("OVER"), WR("C!"), WR("doLIT"), 1, WR("+"), WR("EXIT")]
     )
     compiler.compile_colon("kTAP",
-        []#TODO
+        [WR("DUP"), WR("doLIT"), 13, WR("XOR"), # 13 = CR
+        WR("?branch"), LR("KTAP2"),
+        WR("doLIT"), 8, WR("XOR"), # 8 = backspace
+        WR("?branch"), LR("KTAP1"),
+        WR("BL"), WR("TAP"), WR("EXIT"),
+    L("KTAP1"), WR("^H"), WR("EXIT"),
+    L("KTAP2"), WR("DROP"), WR("SWAP"), WR("DROP"), WR("DUP"), WR("EXIT")]
     )
     compiler.compile_colon("accept",
-        []#TODO
+        [WR("OVER"), WR("+"), WR("OVER"),
+    L("ACCP1"), WR("2DUP"), WR("XOR"),
+        WR("?branch"), LR("ACCP4"),
+        WR("KEY"), WR("DUP"),
+        WR("BL"), WR("doLIT"), 127, WR("WITHIN"),
+        WR("?branch"), LR("ACCP2"),
+        WR("TAP"),
+        WR("branch"), LR("ACCP3"),
+    L("ACCP2"), WR("'TAP"), WR("@EXECUTE"),
+    L("ACCP3"), WR("branch"), LR("ACCP1"),
+    L("ACCP4"), WR("DROP"), WR("OVER"), WR("-"), WR("EXIT")]
     )
     compiler.compile_colon("EXPECT",
-        []#TODO
+        code("'EXPECT @EXECUTE SPAN ! DROP EXIT")
     )
     compiler.compile_colon("QUERY",
-        []#TODO
+        [WR("TIB"), WR("doLIT"), 80, WR("'EXPECT"), WR("@EXECUTE"), WR("#TIB"), WR("!"),
+        WR("DROP"), WR("doLIT"), 0, WR(">IN"), WR("!"), WR("EXIT")]
     )
 
     # Error handling
