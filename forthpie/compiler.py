@@ -34,8 +34,8 @@ class WordNotInDictionary(Exception):
         self.name = name
 
 class Compiler(MemoryManipulator):
-    COMPILE_ONLY = 1
-    IMMEDIATE = 2
+    COMPILE_ONLY = 0x040
+    IMMEDIATE = 0x080
 
     def __init__(self, cell_size, initial_code_address, initial_name_address, initial_user_address, memory, primitives_provider=ForthInterpreter):
         self.cell_size = cell_size
@@ -49,7 +49,7 @@ class Compiler(MemoryManipulator):
         return self.primitives_provider.get_primitive_by_name(name)
 
     def read_word_name(self, name_token_address):
-        name_length = self.memory[name_token_address+2*self.cell_size] >> 3
+        name_length = self.memory[name_token_address+2*self.cell_size] & 0b11111
         name_first_address = name_token_address+2*self.cell_size+1
         return "".join([ chr(c) for c in self.memory[name_first_address:name_first_address+name_length] ])
     
@@ -97,7 +97,7 @@ class Compiler(MemoryManipulator):
         -----------------------------------------------------------
         Token     cell-size bytes  code address (ca)
         Link      cell-size bytes  name address (na) of previous word
-        Length    1 byte           length of Name (5bits) and lexicon bits (3 bits)
+        Length    1 byte           lexicon bits (3 bits) and length of Name (5bits)
         Name      n bytes          name of word number of bytes depends on Length field
         Filler    0/cell-size byte fill to cell boundary 
         """
@@ -106,10 +106,10 @@ class Compiler(MemoryManipulator):
         name_length = len(name)
         if name_length > 0b11111:
             raise Exception("Name too long, can not be compiled.")
-        if lexicon_bits > 0b111:
-            raise Exception("Only 3 bits are available for lexicon bits.")
+        # if lexicon_bits > 0b111:
+        #     raise Exception("Only 3 bits are available for lexicon bits.")
         
-        metadataByte = (name_length << 3) | lexicon_bits
+        metadataByte = name_length | lexicon_bits
         bytes_to_allocate = (2 * self.cell_size) + 1 + name_length
         padding = self.cell_size - (bytes_to_allocate % self.cell_size)
         self.name_address -= (bytes_to_allocate + padding)

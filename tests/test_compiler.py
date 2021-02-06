@@ -17,12 +17,12 @@ def compiler():
 
 def test_compile_name_header(compiler):
     expected_new_name_address = compiler.name_address - (compiler.cell_size*2 +1+len("testWord")+1)
-    compiler.compile_name_header(0b010, "testWord")
+    compiler.compile_name_header(0b01000000, "testWord")
 
     assert compiler.name_address == expected_new_name_address
     assert compiler.read_cell_at_address(compiler.name_address) == 0x180
     assert compiler.read_cell_at_address(compiler.name_address+compiler.cell_size) == 0x3BFF
-    assert compiler.memory[(compiler.name_address+2*compiler.cell_size)] == (len("testWord")<<3|0b010)
+    assert compiler.memory[(compiler.name_address+2*compiler.cell_size)] == (len("testWord")|0b01000000)
     assert compiler.memory[(compiler.name_address+2*compiler.cell_size)+1:(compiler.name_address+2*compiler.cell_size)+1+len("testWord")] == [ord(c) for c in "testWord"]
     assert (compiler.name_address+2*compiler.cell_size)+1+len("testWord")+1 == 0x3BFF
     assert compiler.memory[0x3BFF] == 0 # padding byte
@@ -30,12 +30,12 @@ def test_compile_name_header(compiler):
 def test_compile_colon_header(compiler):
     expected_new_code_address = compiler.code_address + compiler.cell_size
     expected_new_name_address = compiler.name_address - (compiler.cell_size*2 +1+len("testWord")+1)
-    compiler.compile_colon_header(0b010, "testWord")
+    compiler.compile_colon_header(0b01000000, "testWord")
 
     assert compiler.name_address == expected_new_name_address
     assert compiler.read_cell_at_address(compiler.name_address) == 0x180
     assert compiler.read_cell_at_address(compiler.name_address+compiler.cell_size) == 0x3BFF
-    assert compiler.memory[(compiler.name_address+2*compiler.cell_size)] == (len("testWord")<<3|0b010)
+    assert compiler.memory[(compiler.name_address+2*compiler.cell_size)] == (len("testWord")|0b01000000)
     assert compiler.memory[(compiler.name_address+2*compiler.cell_size)+1:(compiler.name_address+2*compiler.cell_size)+1+len("testWord")] == [ord(c) for c in "testWord"]
     assert (compiler.name_address+2*compiler.cell_size)+1+len("testWord")+1 == 0x3BFF
     assert compiler.memory[0x3BFF] == 0 # padding byte
@@ -50,12 +50,12 @@ def test_compile_user_header(compiler):
     expected_new_name_address = compiler.name_address - (compiler.cell_size*2 +1+len("testUser")+1)
     expected_new_user_address = compiler.user_address + compiler.cell_size
 
-    compiler.compile_user_header(0b010, "testUser")
+    compiler.compile_user_header(0b01000000, "testUser")
 
     assert compiler.name_address == expected_new_name_address
     assert compiler.read_cell_at_address(compiler.name_address) == 0x182
     assert compiler.read_cell_at_address(compiler.name_address+compiler.cell_size) == doUser_name_address
-    assert compiler.memory[(compiler.name_address+2*compiler.cell_size)] == (len("testUser")<<3|0b010)
+    assert compiler.memory[(compiler.name_address+2*compiler.cell_size)] == (len("testUser")|0b01000000)
     assert compiler.memory[(compiler.name_address+2*compiler.cell_size)+1:(compiler.name_address+2*compiler.cell_size)+1+len("testUser")] == [ord(c) for c in "testUser"]
     assert (compiler.name_address+2*compiler.cell_size)+1+len("testUser")+1 == doUser_name_address
     assert compiler.memory[0x3BFF] == 0 # padding byte
