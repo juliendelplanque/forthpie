@@ -1,5 +1,5 @@
 from .forth import Memory
-from .compiler import Compiler, WordReference, Label, LabelReference
+from .compiler import Compiler, WordReference, Label, LabelReference, Byte
 
 CELL_SIZE = 2
 
@@ -664,19 +664,30 @@ def bootstrap_16bits_eforth():
 
     # Error handling
     compiler.compile_colon("CATCH",
-        []#TODO
+        [WR("SP@"), WR(">R"), WR("HANDLER"), WR("@"), WR(">R"),
+        WR("RP@"), WR("HANDLER"), WR("!"), WR("EXECUTE"),
+        WR("R>"), WR("HANDLER"), WR("!"),
+        WR("R>"), WR("DROP"), WR("doLIT"), 0, WR("EXIT")]
     )
     compiler.compile_colon("THROW",
-        []#TODO
+        [WR("HANDLER"), WR("@"), WR("RP!"),
+        WR("R>"), WR("HANDLER"), WR("!"),
+        WR("R>"), WR("SWAP"), WR(">R"), WR("SP!"),
+        WR("DROP"), WR("R>"), WR("EXIT")]
     )
     compiler.compile_colon("NULL$",
-        []#TODO
+        [WR("doVAR"),
+        0,
+        Byte(99), Byte(111), Byte(121), Byte(111), Byte(116), Byte(101),
+        ] #TODO: align ?
     )
     compiler.compile_colon("ABORT",
-        []#TODO
+        [WR("NULL$"), WR("THROW")]
     )
     compiler.compile_colon('abort"',
-        [],#TODO
+        [WR("?branch"), LR("ABOR1"),
+        WR("do$"), WR("THROW"),
+    L("ABOR1"), WR("do$"), WR("DROP"), WR("EXIT")],
         COMPILE_ONLY
     )
 

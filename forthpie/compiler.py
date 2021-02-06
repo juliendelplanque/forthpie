@@ -22,6 +22,13 @@ class LabelReference(object):
     def __str__(self):
         return f"{self.__class__.__name__}({self.name})"
 
+class Byte(object):
+    def __init__(self, value):
+        self.value = value
+    
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.value})"
+
 class WordNotInDictionary(Exception):
     def __init__(self, name):
         self.name = name
@@ -168,6 +175,9 @@ class Compiler(MemoryManipulator):
             elif isinstance(token, LabelReference):
                 self.write_cell_at_address(self.code_address, label_addresses[token.name])
                 self.code_address += self.cell_size
+            elif isinstance(token, Byte):
+                self.memory[self.code_address] = token.value
+                self.code_address += 1
             else:
                 raise Exception(f"Unknown token: {token}")
     
