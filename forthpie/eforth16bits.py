@@ -771,102 +771,124 @@ def bootstrap_16bits_eforth():
 
     # The compiler
     compiler.compile_colon("'",
-        []#TODO
+        [WR("TOKEN"), WR("NAME?"),
+        WR("?branch"), LR("TICK1"),
+        WR("EXIT"),
+    L("TICK1"), WR("THROW")]
     )
     compiler.compile_colon("ALLOT",
-        []#TODO
+        [WR("CP"), WR("+!"), WR("EXIT")]
     )
     compiler.compile_colon(",",
-        []#TODO
+        [WR("HERE"), WR("DUP"), WR("CELL+"),
+        WR("CP"), WR("!"), WR("!"), WR("EXIT")]
     )
     compiler.compile_colon("[COMPILE]",
-        [],#TODO
+        [WR("'"), WR(","), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("COMPILE",
-        [],#TODO
+        [WR("R>"), WR("DUP"), WR("@"), WR(","),
+        WR("CELL+"), WR(">R"), WR("EXIT")],
         COMPILE_ONLY
     )
     compiler.compile_colon("LITERAL",
-        [],#TODO
+        [WR("COMPILE"), WR("doLIT"), WR(","), WR("EXIT")],
         IMMEDIATE
     )
-    compiler.compile_colon("$,",
-        []#TODO
+    compiler.compile_colon('$,"',
+        [WR("doLIT"), ord('"'), WR("WORD"),
+        WR("COUNT"), WR("+"), WR("ALIGNED"),
+        WR("CP"), WR("!"), WR("EXIT")]
     )
     compiler.compile_colon("RECURSE",
-        [],#TODO
+        [WR("LAST"), WR("@"), WR("NAME>"), WR(","), WR("EXIT")],
         IMMEDIATE
     )
     
     # Structures
     compiler.compile_colon("FOR",
-        [],#TODO
+        [WR("COMPILE"), WR(">R"), WR("HERE"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("BEGIN",
-        [],#TODO
+        [WR("HERE"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("NEXT",
-        [],#TODO
+        [WR("COMPILE"), WR("next"), WR(","), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("UNTIL",
-        [],#TODO
+        [WR("COMPILE"), WR("?branch"), WR(","), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("AGAIN",
-        [],#TODO
+        [WR("COMPILE"), WR("branch"), WR(","), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("IF",
-        [],#TODO
+        [WR("COMPILE"), WR("?branch"), WR("HERE"),
+        WR("doLIT"), 0, WR(","), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("AHEAD",
-        [],#TODO
+        [WR("COMPILE"), WR("branch"), WR("HERE"), WR("doLIT"), 0, WR(","), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("REPEAT",
-        [],#TODO
+        [WR("AGAIN"), WR("HERE"), WR("SWAP"), WR("!"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("THEN",
-        [],#TODO
+        [WR("HERE"), WR("SWAP"), WR("!"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("AFT",
-        [],#TODO
+        [WR("DROP"), WR("AHEAD"), WR("BEGIN"), WR("SWAP"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("ELSE",
-        [],#TODO
+        [WR("AHEAD"), WR("SWAP"), WR("THEN"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon("WHILE",
-        [],#TODO
+        [WR("IF"), WR("SWAP"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon('ABORT"',
-        [],#TODO
+        [WR("COMPILE"), WR('abort"'), WR('$,"'), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon('$"',
-        [],#TODO
+        [WR("COMPILE"), WR('$"|'), WR('$,"'), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon('."',
-        [],#TODO
+        [WR("COMPILE"), WR('."|'), WR('$,"'), WR("EXIT")],
         IMMEDIATE
     )
 
     # Name compiler
     compiler.compile_colon("?UNIQUE",
-        []#TODO
+        [WR("DUP"), WR("NAME?"),
+        WR("?branch"), LR("UNIQ1"),
+        WR('."|'), " reDef ",
+        WR("OVER"), WR("COUNT"), WR("TYPE"),
+    L("UNIQ1"), WR("DROP"), WR("EXIT")]
     )
     compiler.compile_colon("$,n",
-        []#TODO
+        [WR("DUP"), WR("C@"),
+        WR("?branch"), LR("PNAM1"),
+        WR("?UNIQUE"),
+        WR("DUP"), WR("LAST"), WR("!"),
+        WR("HERE"), WR("ALIGNED"), WR("SWAP"),
+        WR("CELL-"),
+        WR("CURRENT"), WR("@"), WR("@"), WR("OVER"), WR("!"),
+        WR("CELL-"), WR("DUP"), WR("NP"), WR("!"),
+        WR("!"), WR("EXIT"),
+    L("PNAM1"), WR('$"|'), " name",
+        WR("THROW")]
     )
 
     # Forth compiler
@@ -904,37 +926,37 @@ def bootstrap_16bits_eforth():
         []#TODO
     )
 
-    # Tools
-    compiler.compile_colon("_TYPE",
-        []#TODO
-    )
-    compiler.compile_colon("dm+",
-        []#TODO
-    )
-    compiler.compile_colon("DUMP",
-        []#TODO
-    )
-    compiler.compile_colon(".S",
-        []#TODO
-    )
-    compiler.compile_colon("!CSP",
-        []#TODO
-    )
-    compiler.compile_colon("?CSP",
-        []#TODO
-    )
-    compiler.compile_colon(">NAME",
-        []#TODO
-    )
-    compiler.compile_colon(".ID",
-        []#TODO
-    )
-    compiler.compile_colon("SEE",
-        []#TODO
-    )
-    compiler.compile_colon("WORDS",
-        []#TODO
-    )
+    # # Tools
+    # compiler.compile_colon("_TYPE",
+    #     []#TODO
+    # )
+    # compiler.compile_colon("dm+",
+    #     []#TODO
+    # )
+    # compiler.compile_colon("DUMP",
+    #     []#TODO
+    # )
+    # compiler.compile_colon(".S",
+    #     []#TODO
+    # )
+    # compiler.compile_colon("!CSP",
+    #     []#TODO
+    # )
+    # compiler.compile_colon("?CSP",
+    #     []#TODO
+    # )
+    # compiler.compile_colon(">NAME",
+    #     []#TODO
+    # )
+    # compiler.compile_colon(".ID",
+    #     []#TODO
+    # )
+    # compiler.compile_colon("SEE",
+    #     []#TODO
+    # )
+    # compiler.compile_colon("WORDS",
+    #     []#TODO
+    # )
 
     # Hardware reset
     compiler.compile_colon("VER",
@@ -974,7 +996,7 @@ def run():
     interpreter.return_stack_pointer = eforth16bits.RPP
     #TODO
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # from more_itertools import grouper, peekable
     # c = bootstrap_16bits_eforth()
     # name_tokens_iterator = peekable(c.name_tokens_iterator())
