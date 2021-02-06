@@ -160,7 +160,11 @@ class Compiler(MemoryManipulator):
 
         for token in tokens:
             if isinstance(token, str):
-                raise Exception("TODO") # TODO
+                self.memory[self.code_address] = len(token)
+                self.code_address += 1
+                for c in token:
+                    self.memory[self.code_address] = ord(c)
+                    self.code_address += 1
             elif isinstance(token, int):
                 for i, b in enumerate(token.to_bytes(self.cell_size, "big", signed=True)):
                     self.memory[self.code_address+i] = b

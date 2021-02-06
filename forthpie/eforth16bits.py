@@ -693,20 +693,37 @@ def bootstrap_16bits_eforth():
 
     # The text interpreter
     compiler.compile_colon("$INTERPRET",
-        []#TODO
+        [WR("NAME?"), WR("?DUP"),
+        WR("?branch"), LR("INTE1"),
+        WR("@"), WR("doLIT"), COMPILE_ONLY, WR("AND"),
+        WR('abort"'), " compile only",
+        WR("EXECUTE"), WR("EXIT"),
+    L("INTE1"), WR("'NUMBER"), WR("@EXECUTE"),
+        WR("?branch"), LR("INTE2"),
+        WR("EXIT"),
+    L("INTE2"), WR("THROW")]
     )
     compiler.compile_colon("[",
-        [],#TODO
+        [WR("doLIT"), WR("$INTERPRET"), WR("'EVAL"), ("!"), WR("EXIT")],
         IMMEDIATE
     )
     compiler.compile_colon(".OK",
-        []#TODO
+        [WR("doLIT"), WR("$INTERPRET"), WR("'EVAL"), WR("@"), WR("="),
+        WR("?branch"), LR("DOTO1"),
+        WR('."|'), ' ok',
+    L("DOTO1"), WR("CR"), WR("EXIT")]
     )
     compiler.compile_colon("?STACK",
-        []#TODO
+        [WR("DEPTH"), WR("0<"),
+        WR('abort"'), ' underflow',
+        WR("EXIT")]
     )
     compiler.compile_colon("EVAL",
-        []#TODO
+    [L("EVAL1"), WR("TOKEN"), WR("DUP"), WR("C@"),
+        WR("?branch"), LR("EVAL2"),
+        WR("'EVAL"), WR("@EXECUTE"), WR("?STACK"),
+        WR("branch"), LR("EVAL1"),
+    L("EVAL2"), WR("DROP"), WR("'PROMPT"), WR("@EXECUTE"), WR("EXIT")]
     )
 
     # Shell
