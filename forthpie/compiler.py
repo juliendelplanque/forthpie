@@ -117,12 +117,15 @@ class Compiler(MemoryManipulator):
         self.write_cell_at_address(self.name_address, code_address)
         self.write_cell_at_address(self.name_address+self.cell_size, previous_name_address)
         self.memory[self.name_address+2*self.cell_size] = metadataByte
-        self.memory[self.name_address+2*self.cell_size+1:self.name_address+2*self.cell_size+1+name_length] = [ord(c) for c in name]
+        # self.memory[self.name_address+2*self.cell_size+1:self.name_address+2*self.cell_size+1+name_length] = [ord(c) for c in name]
+        for address, letter in zip(range(self.name_address+2*self.cell_size+1, self.name_address+2*self.cell_size+1+name_length), name):
+            self.memory[address] = ord(letter)
 
     def compile_code_header(self, lexicon_bits, name, primitive_name):
         """Compile a colon definition header.
         """
         self.compile_name_header(lexicon_bits, name)
+        # print(f"{name}: xt={self.code_address}")
         self.write_cell_at_address(self.code_address, self.get_primitive_by_name(primitive_name).code)
         self.code_address += self.cell_size
     
@@ -140,6 +143,8 @@ class Compiler(MemoryManipulator):
         self.compile_colon_header(lexicon_bits, name)
         self.write_cell_at_address(self.code_address, self.lookup_word(WordReference("doUSER")))
         self.code_address += self.cell_size
+        if self.code_address == 486:
+            print(f"486 : mem[{name}] = {self.user_address} ({hex(self.user_address)})")
         self.write_cell_at_address(self.code_address, self.user_address)
         self.code_address += self.cell_size
         self.user_address += self.cell_size

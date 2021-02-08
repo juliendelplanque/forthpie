@@ -2,6 +2,10 @@
 
 import io
 
+class NotAByte(Exception):
+    def __init__(self, value):
+        self.value = value
+
 class Memory(object):
     def __init__(self, size):
         self.bytes_array = [0]*size
@@ -13,6 +17,8 @@ class Memory(object):
         return self.bytes_array[index]
     
     def __setitem__(self, index, value):
+        if value < 0 or value > 255:
+            raise NotAByte(value)
         self.bytes_array[index] = value
 
 class primitive(object):
@@ -26,6 +32,7 @@ class primitive(object):
         return self
     
     def execute(self, interpreter):
+        # print(f"DEBUG: {self.name}")
         return self.function(interpreter)
 
 class debug(primitive):
@@ -51,6 +58,9 @@ class debug(primitive):
 class NoPrimitiveFound(Exception):
     def __init__(self, primitive_code):
         self.primitive_code = primitive_code
+    
+    def __str__(self):
+        return "Primitive not found: %d" % self.primitive_code
     
 class MemoryManipulator(object):
     def __init__(self, cell_size):
@@ -101,14 +111,11 @@ class ForthInterpreter(MemoryManipulator):
         self.logger.info(*args, **kwargs)
     
     def step(self, address):
-        try:
-            primitive = self.lookup_primitive(address)
-            self.log_info(
-                f"primitive[{primitive.code}][{primitive.name}] - fct={primitive.function.__name__}"
-            )
-            primitive.execute(self)
-        except NoPrimitiveFound:
-            print("Primitive not found: %d" % address)
+        primitive = self.lookup_primitive(address)
+        self.log_info(
+            f"primitive[{primitive.code}][{primitive.name}] - fct={primitive.function.__name__}"
+        )
+        primitive.execute(self)
     
     def next(self):
         """
@@ -126,6 +133,7 @@ class ForthInterpreter(MemoryManipulator):
         """
         self.keep_going = True
         while self.keep_going:
+            # print("start loop")
             self.keep_going = False
             self._next()
     
@@ -311,7 +319,9 @@ class ForthInterpreter(MemoryManipulator):
 
         ( ca -- )
         """
-        self.step(self.pop_from_data_stack())
+        ca = self.pop_from_data_stack()
+        self.word_pointer = ca
+        self.step(self.read_cell_at_address(ca))
     
     @primitive(7, "EXIT")
     def EXIT(self):

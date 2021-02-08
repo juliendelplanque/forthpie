@@ -14,6 +14,26 @@ import forthpie.eforth16bits as eforth16bits
             id="doLIT"
         ),
         pytest.param(
+            [WordReference("doLIT"), 1, WordReference("doLIT"), WordReference("DUP"), WordReference("EXECUTE")],
+            [1, 1],
+            id="1 ' DUP EXECUTE"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 1, WordReference("doLIT"), WordReference("DUP"), WordReference("EXECUTE"), WordReference("DROP")],
+            [1],
+            id="1 ' DUP EXECUTE DROP"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 1, WordReference("doLIT"), WordReference("DUP"), WordReference("EXECUTE"), WordReference("DROP"), WordReference("DROP")],
+            [],
+            id="1 ' DUP EXECUTE DROP DROP"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 1, WordReference("doLIT"), 2, WordReference("doLIT"), WordReference("SWAP"), WordReference("EXECUTE")],
+            [2, 1],
+            id="1 2 ' SWAP EXECUTE"
+        ),
+        pytest.param(
             [WordReference("doLIT"),0b010101,WordReference("doLIT"),0b010001,WordReference("XOR"),WordReference("BYE")],
             [0b000100],
             id="XOR"
@@ -137,6 +157,16 @@ import forthpie.eforth16bits as eforth16bits
             [WordReference("doLIT"), -2, WordReference("doLIT"), 1, WordReference("+"),WordReference("BYE")],
             [0xFFFF],
             id="+"
+        ),
+        pytest.param(
+            [WordReference("SP0"), WordReference("@")],
+            [0],
+            id="SP0 @"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 42, WordReference("SP0"), WordReference("!"), WordReference("SP0"), WordReference("@")],
+            [42],
+            id="SP0 42 ! SP0 @"
         ),
         pytest.param(
             [WordReference("doLIT"), 1, WordReference("doLIT"), 1, WordReference("-"),WordReference("BYE")],
