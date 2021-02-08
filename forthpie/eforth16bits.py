@@ -38,7 +38,7 @@ def bootstrap_16bits_eforth():
         initial_code_address=CODEE,
         initial_name_address=NAMEE,
         initial_user_address=4*CELL_SIZE,
-        memory=Memory(0x3FFF+1))
+        memory=Memory(0x4000))
     
     # Kernel
     compiler.compile_primitive("BYE")
@@ -1094,11 +1094,10 @@ def run():
     interpreter.memory = compiler.memory
     try:
         interpreter.start()
-    except Exception as e:
-        print(e)
+    finally:
         print("Data stack:")
         for address in range(SPP, interpreter.data_stack_pointer, compiler.cell_size):
-            print("\t", interpreter.memory.read_cell_at_address(address))
+            print("\t", interpreter.read_cell_at_address(address))
         print("\t^ TOP")
 
         print("Return stack:")

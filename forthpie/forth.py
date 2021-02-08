@@ -125,6 +125,8 @@ class ForthInterpreter(MemoryManipulator):
     def _next(self):
         self.log_info(f"IP: {self.interpreter_pointer}")
         self.word_pointer = self.read_cell_at_address(self.interpreter_pointer)
+        if self.word_pointer == 26988:
+            breakpoint()
         self.interpreter_pointer += self.cell_size
         self.step(self.read_cell_at_address(self.word_pointer))
         
@@ -321,6 +323,8 @@ class ForthInterpreter(MemoryManipulator):
         """
         ca = self.pop_from_data_stack()
         self.word_pointer = ca
+        if self.word_pointer == 26988:
+            breakpoint()
         self.step(self.read_cell_at_address(ca))
     
     @primitive(7, "EXIT")

@@ -143,8 +143,6 @@ class Compiler(MemoryManipulator):
         self.compile_colon_header(lexicon_bits, name)
         self.write_cell_at_address(self.code_address, self.lookup_word(WordReference("doUSER")))
         self.code_address += self.cell_size
-        if self.code_address == 486:
-            print(f"486 : mem[{name}] = {self.user_address} ({hex(self.user_address)})")
         self.write_cell_at_address(self.code_address, self.user_address)
         self.code_address += self.cell_size
         self.user_address += self.cell_size
@@ -160,6 +158,10 @@ class Compiler(MemoryManipulator):
         for token in tokens:
             if isinstance(token, Label):
                 label_addresses[token.name] = code_address_for_label_resolution
+            elif isinstance(token, str):
+                code_address_for_label_resolution += len(token)
+            elif isinstance(token, Byte):
+                code_address_for_label_resolution += 1
             else:
                 code_address_for_label_resolution += self.cell_size
 
@@ -170,6 +172,9 @@ class Compiler(MemoryManipulator):
                 for c in token:
                     self.memory[self.code_address] = ord(c)
                     self.code_address += 1
+                # Ensure instruction alignment. TODO: see if needed
+                # if self.code_address % self.cell_size != 0:
+                #     self.code_address += (self.cell_size - (self.code_address % self.cell_size))
             elif isinstance(token, int):
                 for i, b in enumerate(token.to_bytes(self.cell_size, "big", signed=True)):
                     self.memory[self.code_address+i] = b
