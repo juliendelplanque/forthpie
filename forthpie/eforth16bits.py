@@ -32,6 +32,7 @@ LR = LabelReference
 def bootstrap_16bits_eforth():
     COMPILE_ONLY = Compiler.COMPILE_ONLY
     IMMEDIATE = Compiler.IMMEDIATE
+    LEXICON_MASK = 0x07F1F #lexicon bit mask
     compiler = Compiler(
         cell_size=CELL_SIZE,
         initial_code_address=CODEE,
@@ -603,7 +604,24 @@ def bootstrap_16bits_eforth():
     )
     compiler.compile_colon("find",
         [WR("SWAP"), WR("DUP"), WR("C@"),
-        WR("doLIT"), compiler.cell_size, WR("/"), WR("tmp"), WR("!")]
+        WR("doLIT"), compiler.cell_size, WR("/"), WR("tmp"), WR("!"),
+        WR("DUP"), WR("@"), WR(">R"), WR("CELL+"), WR("SWAP"),
+    L("FIND1"), WR("@"), WR("DUP"),
+        WR("?branch"), LR("FIND6"),
+        WR("DUP"), WR("@"), WR("doLIT"), LEXICON_MASK, WR("AND"), WR("R@"), WR("XOR"),
+        WR("?branch"), LR("FIND2"),
+        WR("CELL+"), WR("doLIT"), -1,
+        WR("branch"), LR("FIND3"),
+    L("FIND2"), WR("CELL+"), WR("tmp"), WR("@"), WR("SAME?"),
+    L("FIND3"), WR("branch"), LR("FIND4"),
+    L("FIND6"), WR("R>"), WR("DROP"),
+        WR("SWAP"), WR("CELL-"), WR("SWAP"), WR("EXIT"),
+    L("FIND4"), WR("?branch"), LR("FIND5"),
+        WR("CELL-"), WR("CELL-"),
+        WR("branch"), LR("FIND1"),
+    L("FIND5"), WR("R>"), WR("DROP"), WR("SWAP"), WR("DROP"),
+        WR("CELL-"),
+        WR("DUP"), WR("NAME>"), WR("SWAP"), WR("EXIT")]
     )
     compiler.compile_colon("NAME?",
         [WR("CONTEXT"), WR("DUP"), WR("2@"), WR("XOR"),
