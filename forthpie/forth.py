@@ -160,7 +160,7 @@ class ForthInterpreter(MemoryManipulator):
             self.log_info(log_str)
 
     def _next(self):
-        self._log_ip()
+        self._log_ip(lambda wn: wn in ["QUIT"])
         self.word_pointer = self.read_cell_at_address(self.interpreter_pointer)
         self.interpreter_pointer += self.cell_size
         self.step(self.read_cell_at_address(self.word_pointer))
@@ -632,3 +632,35 @@ class ForthInterpreter(MemoryManipulator):
     def DEBUG(self):
         breakpoint()
         self.next()
+
+class ExecutionStatistics(object):
+    def __init__(self):
+        self.words_calls = dict()
+    
+    def increment_calls_count(self, word_address):
+        if word_address not in self.words_calls.keys():
+            self.words_calls[word_address] = 0
+        
+        self.words_calls[word_address] = self.words_calls[word_address] + 1
+    
+    def word_names_to_count(self, compiler_metadata):
+        names_to_count = dict()
+        for word_address, calls_count in self.words_calls.items():
+            name = None
+            try:
+                name = compiler_metadata.word_address_belongs_to(word_address).name
+            except:
+                name = '?'
+            names_to_count[name] = calls_count
+        return names_to_count
+
+class StatisticsInterpreter(ForthInterpreter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.execution_statistics = ExecutionStatistics()
+
+    def _next(self):
+        self.execution_statistics.increment_calls_count(
+            self.read_cell_at_address(self.interpreter_pointer)
+        )
+        return super()._next()

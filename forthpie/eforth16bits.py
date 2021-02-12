@@ -790,7 +790,7 @@ def compile_shell_words(compiler):
         WR("doLIT"), WR("EVAL"), WR("CATCH"), WR("?DUP"),
         WR("?branch"), LR("QUIT2"),
         WR("'PROMPT"), WR("@"), WR("SWAP"),
-        WR("CONSOLE"), WR("NULL$"), WR("OVER"), WR("XOR"),
+        WR("CONSOLE"), WR("NULL$"), WR("DEBUG"), WR("OVER"), WR("XOR"),
         WR("?branch"), LR("QUIT3"),
         WR("SPACE"), WR("COUNT"), WR("TYPE"),
         WR('."|'), ' ? ',
@@ -1152,29 +1152,31 @@ def bootstrap_16bits_eforth():
 
 def run():
     import sys
-    from .forth import ForthInterpreter
+    from .forth import ForthInterpreter, StatisticsInterpreter
     import logging
-    print(f"CELL_SIZE = {hex(CELL_SIZE)}")
-    print(f"VOCSS = {hex(VOCSS)}")
-    print(f"EM = {hex(EM)}")
-    print(f"COLDD = {hex(COLDD)}")
-    print(f"US = {hex(US)}")
-    print(f"RTS = {hex(RTS)}")
-    print(f"RPP = {hex(RPP)}")
-    print(f"TIBB = {hex(TIBB)}")
-    print(f"SPP = {hex(SPP)}")
-    print(f"UPP = {hex(UPP)}")
-    print(f"NAMEE = {hex(NAMEE)}")
-    print(f"CODEE = {hex(CODEE)}")
+    # print(f"CELL_SIZE = {hex(CELL_SIZE)}")
+    # print(f"VOCSS = {hex(VOCSS)}")
+    # print(f"EM = {hex(EM)}")
+    # print(f"COLDD = {hex(COLDD)}")
+    # print(f"US = {hex(US)}")
+    # print(f"RTS = {hex(RTS)}")
+    # print(f"RPP = {hex(RPP)}")
+    # print(f"TIBB = {hex(TIBB)}")
+    # print(f"SPP = {hex(SPP)}")
+    # print(f"UPP = {hex(UPP)}")
+    # print(f"NAMEE = {hex(NAMEE)}")
+    # print(f"CODEE = {hex(CODEE)}")
     logging.basicConfig()
     logging.root.setLevel(logging.INFO)
 
     compiler = bootstrap_16bits_eforth()
-    interpreter = ForthInterpreter(
+    interpreter_class = ForthInterpreter
+    # interpreter_class = StatisticsInterpreter
+    interpreter = interpreter_class(
                     compiler.cell_size,
                     input_stream=sys.stdin,
                     output_stream=sys.stdout,
-                    # logger=logging,
+                    logger=logging,
                     compiler_metadata=compiler.compiler_metadata
                 )
     interpreter.data_stack_pointer = SPP
@@ -1184,6 +1186,7 @@ def run():
     interpreter.memory = compiler.memory
     try:
         interpreter.start()
+        # print(interpreter.execution_statistics.word_names_to_count(compiler.compiler_metadata))
     finally:
         print("Data stack:")
         for address in range(SPP, interpreter.data_stack_pointer, -compiler.cell_size):
