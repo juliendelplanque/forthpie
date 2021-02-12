@@ -160,11 +160,8 @@ class ForthInterpreter(MemoryManipulator):
             self.log_info(log_str)
 
     def _next(self):
-        self._log_ip(lambda wn: wn in ["find", "$INTERPRET", "NAME?"])
-        # self._log_ip()
+        self._log_ip()
         self.word_pointer = self.read_cell_at_address(self.interpreter_pointer)
-        if self.word_pointer == 26988:
-            breakpoint()
         self.interpreter_pointer += self.cell_size
         self.step(self.read_cell_at_address(self.word_pointer))
         
