@@ -29,9 +29,34 @@ class Byte(object):
     def __str__(self):
         return f"{self.__class__.__name__}({self.value})"
 
+class Align(object):
+    pass
+
 class WordNotInDictionary(Exception):
     def __init__(self, name):
         self.name = name
+
+class WordMetaData(object):
+    def __init__(self, word_name, start_address, end_address=None):
+        self.name = word_name
+        self.start_address = start_address
+        self.end_address = end_address
+    
+    def is_part_of_code(self, address):
+        return self.start_address <= address and address <= self.end_address
+
+class CompilerMetadata(object):
+    def __init__(self):
+        self.words_metadata = []
+    
+    def add_word_meta(self, word_meta):
+        self.words_metadata.append(word_meta)
+    
+    def last(self):
+        return self.words_metadata[-1]
+    
+    def word_address_belongs_to(self, address):
+        return next(m for m in self.words_metadata if m.is_part_of_code(address))
 
 class Compiler(MemoryManipulator):
     COMPILE_ONLY = 0x040
@@ -44,6 +69,7 @@ class Compiler(MemoryManipulator):
         self.user_address = initial_user_address
         self.memory = memory
         self.primitives_provider = primitives_provider
+        self.compiler_metadata = CompilerMetadata()
     
     def get_primitive_by_name(self, name):
         return self.primitives_provider.get_primitive_by_name(name)
@@ -54,7 +80,7 @@ class Compiler(MemoryManipulator):
         return "".join([ chr(c) for c in self.memory[name_first_address:name_first_address+name_length] ])
     
     def read_previous_name_token_address(self, name_token_address):
-        return self.read_cell_at_address(name_token_address+self.cell_size)
+        return self.read_cell_at_address(name_token_address+self.cell_size) - 2 * self.cell_size # NOTE: I modified this
     
     def read_execution_token_address(self, name_token_address):
         return self.read_cell_at_address(name_token_address)
@@ -101,6 +127,7 @@ class Compiler(MemoryManipulator):
         Name      n bytes          name of word number of bytes depends on Length field
         Filler    0/cell-size byte fill to cell boundary 
         """
+        self.code_address = self.align_address(self.code_address)
         code_address = self.code_address
         previous_name_address = self.name_address
         name_length = len(name)
@@ -110,14 +137,14 @@ class Compiler(MemoryManipulator):
         #     raise Exception("Only 3 bits are available for lexicon bits.")
         
         metadataByte = name_length | lexicon_bits
-        bytes_to_allocate = (2 * self.cell_size) + 1 + name_length
-        padding = self.cell_size - (bytes_to_allocate % self.cell_size)
-        self.name_address -= (bytes_to_allocate + padding)
+        # bytes_to_allocate = (2 * self.cell_size) + 1 + name_length
+        # padding = self.cell_size - (bytes_to_allocate % self.cell_size)
+        # self.name_address -= (bytes_to_allocate + padding)
+        self.name_address -= (name_length + 3) * self.cell_size
 
         self.write_cell_at_address(self.name_address, code_address)
-        self.write_cell_at_address(self.name_address+self.cell_size, previous_name_address)
+        self.write_cell_at_address(self.name_address+self.cell_size, previous_name_address+2*self.cell_size) # NOTE: I modified this
         self.memory[self.name_address+2*self.cell_size] = metadataByte
-        # self.memory[self.name_address+2*self.cell_size+1:self.name_address+2*self.cell_size+1+name_length] = [ord(c) for c in name]
         for address, letter in zip(range(self.name_address+2*self.cell_size+1, self.name_address+2*self.cell_size+1+name_length), name):
             self.memory[address] = ord(letter)
 
@@ -126,11 +153,13 @@ class Compiler(MemoryManipulator):
         """
         self.compile_name_header(lexicon_bits, name)
         # print(f"{name}: xt={self.code_address}")
+        self.compiler_metadata.add_word_meta(WordMetaData(name, self.code_address))
         self.write_cell_at_address(self.code_address, self.get_primitive_by_name(primitive_name).code)
         self.code_address += self.cell_size
     
     def compile_primitive(self, name, lexicon_bits=0):
         self.compile_code_header(lexicon_bits, name, name)
+        self.compiler_metadata.last().end_address = self.code_address-self.cell_size
 
     def compile_colon_header(self, lexicon_bits, name):
         """Compile a colon definition header.
@@ -151,6 +180,13 @@ class Compiler(MemoryManipulator):
         self.compile_user_header(lexicon_bits, name)
         for _ in range(cells-1):
             self.user_address += self.cell_size
+        self.compiler_metadata.last().end_address = self.code_address-self.cell_size
+    
+    def align_address(self, address):
+        if address % self.cell_size == 0:
+            return address
+
+        return address + (self.cell_size - (address % self.cell_size))
 
     def compile_word_body(self, tokens):
         label_addresses = dict()
@@ -159,7 +195,8 @@ class Compiler(MemoryManipulator):
             if isinstance(token, Label):
                 label_addresses[token.name] = code_address_for_label_resolution
             elif isinstance(token, str):
-                code_address_for_label_resolution += len(token)
+                code_address_for_label_resolution += len(token)+1 #+1 for size of str
+                code_address_for_label_resolution = self.align_address(code_address_for_label_resolution)
             elif isinstance(token, Byte):
                 code_address_for_label_resolution += 1
             else:
@@ -173,10 +210,9 @@ class Compiler(MemoryManipulator):
                     self.memory[self.code_address] = ord(c)
                     self.code_address += 1
                 # Ensure instruction alignment. TODO: see if needed
-                # if self.code_address % self.cell_size != 0:
-                #     self.code_address += (self.cell_size - (self.code_address % self.cell_size))
+                self.code_address = self.align_address(self.code_address)
             elif isinstance(token, int):
-                for i, b in enumerate(token.to_bytes(self.cell_size, "big", signed=True)):
+                for i, b in enumerate(token.to_bytes(self.cell_size, "little", signed=True)):
                     self.memory[self.code_address+i] = b
                 # self.write_cell_at_address(self.code_address, token)
                 self.code_address += self.cell_size
@@ -192,9 +228,12 @@ class Compiler(MemoryManipulator):
             elif isinstance(token, Byte):
                 self.memory[self.code_address] = token.value
                 self.code_address += 1
+            elif isinstance(token, Align):
+                self.code_address = self.align_address(self.code_address)
             else:
                 raise Exception(f"Unknown token: {token}")
     
     def compile_colon(self, name, tokens, lexicon_bits=0):
         self.compile_colon_header(lexicon_bits, name)
         self.compile_word_body(tokens)
+        self.compiler_metadata.last().end_address = self.code_address-self.cell_size

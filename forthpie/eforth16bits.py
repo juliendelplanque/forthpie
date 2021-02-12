@@ -1,5 +1,5 @@
 from .forth import Memory
-from .compiler import Compiler, WordReference, Label, LabelReference, Byte
+from .compiler import Compiler, WordReference, Label, LabelReference, Byte, Align
 
 CELL_SIZE = 2
 VOCSS = 8
@@ -8,12 +8,12 @@ EM = 0x4000
 COLDD = 0x100
 US = 64*CELL_SIZE # user area size in cells
 RTS = 64*CELL_SIZE # return stack/TIB size
-RPP = EM-8*CELL_SIZE # start of return stack (RP0)
-TIBB = RPP-RTS # terminal input buffer (TIB)
-SPP = TIBB-8*CELL_SIZE # start of data stack (SP0)
-UPP = EM-256*CELL_SIZE # start of user area (UP0)
-NAMEE = UPP-8*CELL_SIZE # name dictionary
-CODEE = COLDD+US #code dictionary
+RPP = 0x3F7F #EM-8*CELL_SIZE # start of return stack (RP0)
+TIBB = 0x3E80 #RPP-RTS # terminal input buffer (TIB)
+SPP = 0x3E7F #TIBB-8*CELL_SIZE # start of data stack (SP0)
+UPP = 0x3F80 #EM-256*CELL_SIZE # start of user area (UP0)
+NAMEE = 0x3BFF #UPP-8*CELL_SIZE # name dictionary
+CODEE = 0x180 #COLDD+US #code dictionary
 
 def code(string):
     return [WordReference(s) for s in string.split()] 
@@ -38,7 +38,7 @@ def bootstrap_16bits_eforth():
         initial_code_address=CODEE,
         initial_name_address=NAMEE,
         initial_user_address=4*CELL_SIZE,
-        memory=Memory(0x4000))
+        memory=Memory(EM))
     
     # Kernel
     compiler.compile_primitive("BYE")
@@ -73,6 +73,7 @@ def bootstrap_16bits_eforth():
     compiler.compile_primitive("XOR")
     compiler.compile_primitive("UM+")
     compiler.compile_primitive("UM/MOD")
+    compiler.compile_primitive("DEBUG")
 
     # System and user variables
     compiler.compile_colon("doVAR",
@@ -163,9 +164,9 @@ def bootstrap_16bits_eforth():
     )
     compiler.compile_colon("U<",
         [WR("2DUP"), WR("XOR"), WR("0<"),
-        WR("?branch"), LR("U<1"),
+        WR("?branch"), LR("ULES1"),
         WR("SWAP"), WR("DROP"), WR("0<"), WR("EXIT"),
-        L("U<1"), WR("-"), WR("0<"), WR("EXIT")]
+    L("ULES1"), WR("-"), WR("0<"), WR("EXIT")]
     )
     compiler.compile_colon("<",
         [WR("2DUP"), WR("XOR"), WR("0<"),
@@ -463,7 +464,7 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("NUF?",
         [WR("?KEY"), WR("DUP"),
         WR("?branch"), LR("NUFQ1"),
-        WR("2DROP"), WR("KEY"), WR("doLIT"), 13, WR("="), # 13 = CR
+        WR("2DROP"), WR("KEY"), WR("doLIT"), 10, WR("="),  # 13 = CR, 10 = LF # NOTE: I changed 13 to 10
     L("NUFQ1"), WR("EXIT")]
     )
     compiler.compile_colon("PACE",
@@ -605,10 +606,13 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("find",
         [WR("SWAP"), WR("DUP"), WR("C@"),
         WR("doLIT"), compiler.cell_size, WR("/"), WR("tmp"), WR("!"),
-        WR("DUP"), WR("@"), WR(">R"), WR("CELL+"), WR("SWAP"),
+        # WR("doLIT"), 0x01F, WR("AND"), WR("tmp"), WR("!"), # TOREMOVE: tried to fix previous line with that... Was endianess problem, EForth expects little endian! This line should be removed
+        WR("DUP"), WR("@"), WR(">R"),
+        WR("CELL+"), WR("SWAP"),
     L("FIND1"), WR("@"), WR("DUP"),
         WR("?branch"), LR("FIND6"),
-        WR("DUP"), WR("@"), WR("doLIT"), LEXICON_MASK, WR("AND"), WR("R@"), WR("XOR"),
+        WR("DUP"), WR("@"),
+        WR("doLIT"), LEXICON_MASK, WR("AND"), WR("R@"), WR("XOR"),
         WR("?branch"), LR("FIND2"),
         WR("CELL+"), WR("doLIT"), -1,
         WR("branch"), LR("FIND3"),
@@ -652,7 +656,7 @@ def bootstrap_16bits_eforth():
         WR("OVER"), WR("C!"), WR("doLIT"), 1, WR("+"), WR("EXIT")]
     )
     compiler.compile_colon("kTAP",
-        [WR("DUP"), WR("doLIT"), 13, WR("XOR"), # 13 = CR
+        [WR("DUP"), WR("doLIT"), 10, WR("XOR"), # 13 = CR, 10 = LF # NOTE: I changed 13 to 10
         WR("?branch"), LR("KTAP2"),
         WR("doLIT"), 8, WR("XOR"), # 8 = backspace
         WR("?branch"), LR("KTAP1"),
@@ -665,6 +669,7 @@ def bootstrap_16bits_eforth():
     L("ACCP1"), WR("2DUP"), WR("XOR"),
         WR("?branch"), LR("ACCP4"),
         WR("KEY"), WR("DUP"),
+        # WR("BL"), WR("-"), WR("doLIT"), 95, WR("U<"), # Also commented in assembly file.
         WR("BL"), WR("doLIT"), 127, WR("WITHIN"),
         WR("?branch"), LR("ACCP2"),
         WR("TAP"),
@@ -698,7 +703,7 @@ def bootstrap_16bits_eforth():
         [WR("doVAR"),
         0,
         Byte(99), Byte(111), Byte(121), Byte(111), Byte(116), Byte(101),
-        ] #TODO: align ?
+        Align()]
     )
     compiler.compile_colon("ABORT",
         [WR("NULL$"), WR("THROW")]
@@ -937,7 +942,8 @@ def bootstrap_16bits_eforth():
         []#TODO
     )
     compiler.compile_colon(":", # Implementation different from EFORTH.ASM !
-        [WR("TOKEN"), WR("$,n"), WR("COMPILE"), WR("doLIST"),
+        [WR("TOKEN"), WR("$,n"),
+        WR("doLIT"), compiler.get_primitive_by_name("doLIST").code, WR(","),
         WR("]"), WR("EXIT")]
     )
     compiler.compile_colon("IMMEDIATE",
@@ -948,31 +954,60 @@ def bootstrap_16bits_eforth():
     # Defining words
     compiler.compile_colon("USER", # Implementation different from EFORTH.ASM !
         [WR("TOKEN"), WR("$,n"), WR("OVERT"),
-        WR("COMPILE"), WR("doLIST"),
+        WR("doLIT"), compiler.get_primitive_by_name("doLIST").code, WR(","),
         WR("COMPILE"), WR("doUSER"), WR(","), WR("EXIT")]
     )
     compiler.compile_colon("CREATE", # Implementation different from EFORTH.ASM !
         [WR("TOKEN"), WR("$,n"), WR("OVERT"),
-        WR("COMPILE"), WR("doLIST"),
+        WR("doLIT"), compiler.get_primitive_by_name("doLIST").code, WR(","),
         WR("COMPILE"), WR("doVAR"), WR("EXIT")]
     )
     compiler.compile_colon("VARIABLE",
         [WR("CREATE"), WR("doLIT"), 0, WR(","), WR("EXIT")]
     )
 
-    # # Tools
-    # compiler.compile_colon("_TYPE",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("dm+",
-    #     []#TODO
-    # )
-    # compiler.compile_colon("DUMP",
-    #     []#TODO
-    # )
-    # compiler.compile_colon(".S",
-    #     []#TODO
-    # )
+    # Tools
+    compiler.compile_colon("_TYPE",
+        [WR(">R"),
+        WR("branch"), LR("UTYP2"),
+    L("UTYP1"), WR("DUP"), WR("C@"), WR(">CHAR"), WR("EMIT"),
+        WR("doLIT"), 1, WR("+"),
+    L("UTYP2"), WR("next"), LR("UTYP1"),
+        WR("DROP"), WR("EXIT")]
+    )
+    compiler.compile_colon("dm+",
+        [WR("OVER"), WR("doLIT"), 4, WR("U.R"),
+        WR("SPACE"), WR(">R"),
+        WR("branch"), LR("PDUM2"),
+    L("PDUM1"), WR("DUP"), WR("C@"), WR("doLIT"), 3, WR("U.R"),
+        WR("doLIT"), 1, WR("+"),
+    L("PDUM2"), WR("next"), LR("PDUM1"),
+        WR("EXIT")]
+    )
+    compiler.compile_colon("DUMP",
+        [WR("BASE"), WR("@"), WR(">R"), WR("HEX"),
+        WR("doLIT"), 16, WR("/"),
+        WR(">R"),
+    L("DUMP1"), WR("CR"), WR("doLIT"), 16, WR("2DUP"), WR("dm+"),
+        WR("ROT"), WR("ROT"),
+        WR("SPACE"), WR("SPACE"), WR("_TYPE"),
+        WR("NUF?"), WR("NOT"),
+        WR("?branch"), LR("DUMP2"), 
+        WR("next"), LR("DUMP1"),
+        WR("branch"), LR("DUMP3"),
+    L("DUMP2"), WR("R>"), WR("DROP"),
+    L("DUMP3"), WR("DROP"), WR("R>"), WR("BASE"), WR("!"),
+        WR("EXIT")]
+    )
+    compiler.compile_colon(".S",
+        [WR("CR"), WR("DEPTH"),
+        WR(">R"),
+        WR("branch"), LR("DOTS2"),
+    L("DOTS1"), WR("R@"), WR("PICK"), WR("."),
+    L("DOTS2"), WR("next"), LR("DOTS1"),
+        WR('."|'), ' <sp',
+        WR("EXIT")]
+    )
     # compiler.compile_colon("!CSP",
     #     []#TODO
     # )
@@ -1021,27 +1056,30 @@ def bootstrap_16bits_eforth():
     )
 
     # Initialize memory with default user variable values
-    LASTN = compiler.name_address
-    NTOP = compiler.name_address - 1
+    LASTN = compiler.name_address + 8
+    print(f"Last name address (LASTN) = {hex(LASTN)}")
+    NTOP = compiler.name_address + 4
+    print(f"Name dict (NTOP)={hex(NTOP)}")
     CTOP = compiler.code_address
+    print(f"Code dict (CTOP)={hex(CTOP)}")
     init_values = ([ 0,0,0,0,
         SPP,
         RPP,
-        compiler.lookup_word(WR("'?KEY")),
-        compiler.lookup_word(WR("'EMIT")),
-        compiler.lookup_word(WR("'EXPECT")),
-        compiler.lookup_word(WR("'TAP")),
-        compiler.lookup_word(WR("'ECHO")),
-        compiler.lookup_word(WR("'PROMPT")),
-        compiler.lookup_word(WR("BASE")),
+        compiler.lookup_word(WR("?RX")),
+        compiler.lookup_word(WR("TX!")),
+        compiler.lookup_word(WR("accept")),
+        compiler.lookup_word(WR("kTAP")),
+        compiler.lookup_word(WR("TX!")), # 'ECHO
+        compiler.lookup_word(WR(".OK")),
+        10, # Default radix
+        0, # tmp
+        0, # SPAN
+        0, # >IN
+        0, # #TIB
+        TIBB,
         0,
-        0,
-        0,
-        0,
-        compiler.lookup_word(WR("TIB")),
-        0,
-        compiler.lookup_word(WR("'EVAL")),
-        compiler.lookup_word(WR("'NUMBER")),
+        compiler.lookup_word(WR("$INTERPRET")),
+        compiler.lookup_word(WR("NUMBER?")),
         0,
         0,
         0] +
@@ -1075,40 +1113,46 @@ def run():
     print(f"NAMEE = {hex(NAMEE)}")
     print(f"CODEE = {hex(CODEE)}")
     logging.basicConfig()
-    logging.root.setLevel(logging.NOTSET)
+    logging.root.setLevel(logging.INFO)
 
     compiler = bootstrap_16bits_eforth()
     interpreter = ForthInterpreter(
                     compiler.cell_size,
                     input_stream=sys.stdin,
                     output_stream=sys.stdout,
-                    logger=logging
+                    # logger=logging,
+                    compiler_metadata=compiler.compiler_metadata
                 )
     interpreter.data_stack_pointer = SPP
-    logging.info(f"interpreter.data_stack_pointer = {interpreter.data_stack_pointer}")
     interpreter.return_stack_pointer = RPP
-    print(f"interpreter.return_stack_pointer = {interpreter.return_stack_pointer}")
     interpreter.interpreter_pointer = compiler.code_address
-    print(f"interpreter.interpreter_pointer= {interpreter.interpreter_pointer}")
     compiler.compile_word_body([WR("COLD")])
     interpreter.memory = compiler.memory
     try:
         interpreter.start()
     finally:
         print("Data stack:")
-        for address in range(SPP, interpreter.data_stack_pointer, compiler.cell_size):
+        for address in range(SPP, interpreter.data_stack_pointer, -compiler.cell_size):
             print("\t", interpreter.read_cell_at_address(address))
         print("\t^ TOP")
 
         print("Return stack:")
         for address in range(RPP, interpreter.return_stack_pointer-compiler.cell_size, -compiler.cell_size):
-            print("\t", interpreter.read_cell_at_address(address))
+            address_on_stack = interpreter.read_cell_at_address(address)
+            try:
+                word_name = interpreter.compiler_metadata.word_address_belongs_to(address_on_stack).name
+            except StopIteration:
+                word_name = "(?)"
+            print(f"\t{address_on_stack} ({word_name})")
         print("\t^ TOP")
 
         print("User variables:")
-        for address in range(UPP, compiler.user_address+compiler.cell_size, compiler.cell_size):
+        for address in range(UPP, UPP+compiler.user_address, compiler.cell_size):
             print("\t", hex(interpreter.read_cell_at_address(address)))
-
+        
+        print("TIB[0:10]:")
+        for address in range(TIBB, TIBB+10*compiler.cell_size, compiler.cell_size):
+            print(f"\t{hex(interpreter.memory[address])} ({chr(interpreter.memory[address])})")
 
 if __name__ == "__main__":
     run()

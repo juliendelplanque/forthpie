@@ -194,6 +194,11 @@ import forthpie.eforth16bits as eforth16bits
             id="15 5 10 WITHIN"
         ),
         pytest.param(
+            [WordReference("doLIT"), 97, WordReference("doLIT"), 32, WordReference("doLIT"), 127, WordReference("WITHIN"),WordReference("BYE")],
+            [0xFFFF],
+            id="97 32 127 WITHIN"
+        ),
+        pytest.param(
             [WordReference("doLIT"), 1, WordReference("doLIT"), 2, WordReference("doLIT"), 3, WordReference("ROT"),WordReference("BYE")],
             [2, 3, 1],
             id="ROT"
@@ -384,8 +389,10 @@ def test_WORD(to_compile, expected_data_stack):
     initial_return_stack_pointer = interpreter.return_stack_pointer
     interpreter.memory = compiler.memory
     interpreter.start()
-    assert interpreter.data_stack_pointer == initial_data_stack_pointer + len(expected_data_stack)*interpreter.cell_size
+    assert interpreter.data_stack_pointer == initial_data_stack_pointer - len(expected_data_stack)*interpreter.cell_size
     assert interpreter.return_stack_pointer == initial_return_stack_pointer
 
-    for i, stack_data in enumerate(expected_data_stack):
-        assert interpreter.read_cell_at_address(interpreter.data_stack_pointer-len(expected_data_stack)*interpreter.cell_size+i*interpreter.cell_size) == stack_data
+    # for i, stack_data in enumerate(expected_data_stack):
+    #     assert interpreter.read_cell_at_address(interpreter.data_stack_pointer-len(expected_data_stack)*interpreter.cell_size+i*interpreter.cell_size) == stack_data
+
+    assert expected_data_stack == interpreter.tops_of_data_stack(len(expected_data_stack))

@@ -69,13 +69,24 @@ class MemoryManipulator(object):
     
     def read_cell_at_address(self, address):
         value = 0
+        # NOTE: I changed this because it should be encoded in little endian! Eforth makes assumption about that!
+        # for i in range(self.cell_size):
+        #     value = (value << 8) | self.memory[address+i]
+
+        addr = address + (self.cell_size - 1)
         for i in range(self.cell_size):
-            value = (value << 8) | self.memory[address+i]
+            value = (value << 8) | self.memory[addr-i]
+
         return value
     
     def write_cell_at_address(self, address, cell_value):
         to_write = cell_value
-        for addr in range(address + self.cell_size - 1, address-1, -1):
+        # NOTE: I changed this because it should be encoded in little endian! Eforth makes assumption about that!
+        # for addr in range(address + self.cell_size - 1, address-1, -1):
+        #     self.memory[addr] = to_write & 0xFF
+        #     to_write = to_write >> 8
+
+        for addr in range(address, address + self.cell_size, 1):
             self.memory[addr] = to_write & 0xFF
             to_write = to_write >> 8
 
@@ -86,7 +97,8 @@ class ForthInterpreter(MemoryManipulator):
         memory_size=0,
         input_stream=None,
         output_stream=None,
-        logger=None
+        logger=None,
+        compiler_metadata=None
     ):
         self.cell_size = cell_size
         self.interpreter_pointer = 0
@@ -104,15 +116,21 @@ class ForthInterpreter(MemoryManipulator):
             self.output_stream = io.StringIO("")
         self.logger = logger
         self.keep_going = False
+        self.compiler_metadata = compiler_metadata
     
     def log_info(self, *args, **kwargs):
         if not self.logger:
             return
         self.logger.info(*args, **kwargs)
     
+    def log_debug(self, *args, **kwargs):
+        if not self.logger:
+            return
+        self.logger.debug(*args, **kwargs)
+    
     def step(self, address):
         primitive = self.lookup_primitive(address)
-        self.log_info(
+        self.log_debug(
             f"primitive[{primitive.code}][{primitive.name}] - fct={primitive.function.__name__}"
         )
         primitive.execute(self)
@@ -122,8 +140,29 @@ class ForthInterpreter(MemoryManipulator):
         """
         self.keep_going = True
     
+    def _log_ip(self, wordname_filter=lambda wordname: True):
+        if not self.compiler_metadata:
+            return
+        log_str = f"IP: {self.interpreter_pointer} "
+        
+        word_name = None
+        try:
+            word_name = self.compiler_metadata.word_address_belongs_to(self.interpreter_pointer).name
+            log_str += f"({word_name})"
+        except StopIteration:
+            log_str += "(?)"
+        try:
+            address_of_word_called = self.read_cell_at_address(self.interpreter_pointer)
+            word_called_name = self.compiler_metadata.word_address_belongs_to(address_of_word_called).name
+            log_str += f"-> {word_called_name}()"
+        except StopIteration:
+            log_str += f"-> ?{hex(address_of_word_called)}?()"
+        if wordname_filter(word_name):
+            self.log_info(log_str)
+
     def _next(self):
-        self.log_info(f"IP: {self.interpreter_pointer}")
+        self._log_ip(lambda wn: wn in ["find", "$INTERPRET", "NAME?"])
+        # self._log_ip()
         self.word_pointer = self.read_cell_at_address(self.interpreter_pointer)
         if self.word_pointer == 26988:
             breakpoint()
@@ -163,21 +202,34 @@ class ForthInterpreter(MemoryManipulator):
 
         Data stack grows upward.
         """
-        self.data_stack_pointer += self.cell_size
+        # self.data_stack_pointer += self.cell_size
+        self.data_stack_pointer -= self.cell_size
     
     def deallocate_data_stack(self):
         """Deallocate a cell on the data stack.
 
         Data stack grows upward.
         """
-        self.data_stack_pointer -= self.cell_size
+        # self.data_stack_pointer -= self.cell_size
+        # if self.data_stack_pointer == 0x3E7F: # TODO: do not hardcode!
+        #     raise Exception("Data stack underflow!")
+        # if self.data_stack_pointer + self.cell_size == 0x3E7F:
+        #     self.log_debug("Empty data stack!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        #     self._log_ip()
+        self.data_stack_pointer += self.cell_size
 
     def tops_of_data_stack(self, count=1):
+        # current_stack_pointer = self.data_stack_pointer
+        # cells = []
+        # for i in range(count):
+        #     current_stack_pointer -= self.cell_size
+        #     cells.insert(0, self.read_cell_at_address(current_stack_pointer))
+        # return cells
         current_stack_pointer = self.data_stack_pointer
         cells = []
         for i in range(count):
-            current_stack_pointer -= self.cell_size
             cells.insert(0, self.read_cell_at_address(current_stack_pointer))
+            current_stack_pointer += self.cell_size
         return cells
     
     def top_of_data_stack(self):
@@ -186,16 +238,23 @@ class ForthInterpreter(MemoryManipulator):
     def push_on_data_stack(self, cell_value):
         # import inspect
         # print(f"push_on_data_stack({cell_value}) from {inspect.stack()[1][3]}")
-        self.log_info(f"push_on_data_stack({cell_value})")
-        self.write_cell_at_address(self.data_stack_pointer, cell_value)
+        self.log_debug(f"push_on_data_stack({cell_value})")
+        # self.write_cell_at_address(self.data_stack_pointer, cell_value)
+        # self.allocate_data_stack()
+        # if cell_value == 700:
+        #     breakpoint()
         self.allocate_data_stack()
+        self.write_cell_at_address(self.data_stack_pointer, cell_value)
     
     def pop_from_data_stack(self):
         # import inspect
         # print(f"pop_from_data_stack() -> {self.top_of_data_stack()} from {inspect.stack()[1][3]}")
-        self.log_info(f"pop_from_data_stack() -> {self.top_of_data_stack()}")
+        self.log_debug(f"pop_from_data_stack() -> {self.top_of_data_stack()}")
+        # self.deallocate_data_stack()
+        # return self.read_cell_at_address(self.data_stack_pointer)
+        cell = self.read_cell_at_address(self.data_stack_pointer)
         self.deallocate_data_stack()
-        return self.read_cell_at_address(self.data_stack_pointer)
+        return cell
     
     def allocate_return_stack(self):
         """Allocate a cell on the return stack.
@@ -218,7 +277,7 @@ class ForthInterpreter(MemoryManipulator):
     def pop_from_return_stack(self):
         # import inspect
         # print(f"pop_from_return_stack() -> {self.top_of_return_stack()} from {inspect.stack()[1][3]}")
-        self.log_info(f"pop_from_return_stack() -> {self.top_of_return_stack()}")
+        self.log_debug(f"pop_from_return_stack() -> {self.top_of_return_stack()}")
         cell = self.read_cell_at_address(self.return_stack_pointer)
         self.deallocate_return_stack()
         return cell
@@ -226,7 +285,7 @@ class ForthInterpreter(MemoryManipulator):
     def push_on_return_stack(self, cell_value):
         # import inspect
         # print(f"push_on_return_stack({cell_value}) from {inspect.stack()[1][3]}")
-        self.log_info(f"push_on_return_stack({cell_value})")
+        self.log_debug(f"push_on_return_stack({cell_value})")
         self.allocate_return_stack()
         self.write_cell_at_address(self.return_stack_pointer, cell_value)
     
@@ -256,8 +315,11 @@ class ForthInterpreter(MemoryManipulator):
     def bye(self):
         """( -- , exit Forth )
         """
+        self.log_info("Exiting the VM.")
+        # breakpoint()
         return # Does nothing and, most importantly, do not call next() thus stopping the interpreter.
     
+    # @debug
     @primitive(1, "?RX")
     def imrx(self):
         """Return input character and true, or a false if no input.
@@ -272,6 +334,7 @@ class ForthInterpreter(MemoryManipulator):
             self.push_on_data_stack(0)
         self.next()
     
+    # @debug
     @primitive(2, "TX!")
     def txem(self):
         """Send character c to output device.
@@ -279,7 +342,9 @@ class ForthInterpreter(MemoryManipulator):
         ( c -- )
         """
         c = self.pop_from_data_stack()
+        # print("to write: %s"% chr(c))
         self.output_stream.write(chr(c))
+        self.output_stream.flush()
         self.next()
 
     @primitive(3, "!IO")
@@ -323,16 +388,13 @@ class ForthInterpreter(MemoryManipulator):
         """
         ca = self.pop_from_data_stack()
         self.word_pointer = ca
-        if self.word_pointer == 26988:
-            breakpoint()
         self.step(self.read_cell_at_address(ca))
     
     @primitive(7, "EXIT")
     def EXIT(self):
         """Terminate a colon definition.
         """
-        self.interpreter_pointer = self.read_cell_at_address(self.return_stack_pointer)
-        self.return_stack_pointer += self.cell_size # deallocate space for cell on datastack
+        self.interpreter_pointer = self.pop_from_return_stack()
         self.next()
     
     @primitive(8, "next")
@@ -507,7 +569,8 @@ class ForthInterpreter(MemoryManipulator):
 
         ( w1 w2 -- w1 w2 w1 )
         """
-        w1 = self.read_cell_at_address(self.data_stack_pointer-2*self.cell_size)
+        # w1 = self.read_cell_at_address(self.data_stack_pointer-2*self.cell_size)
+        w1 = self.tops_of_data_stack(2)[0]
         self.push_on_data_stack(w1)
         self.next()
     
@@ -602,4 +665,10 @@ class ForthInterpreter(MemoryManipulator):
 
         self.push_on_data_stack(d % u)
         self.push_on_data_stack(d // u)
+        self.next()
+    
+    @debug
+    @primitive(32, "DEBUG")
+    def DEBUG(self):
+        breakpoint()
         self.next()
