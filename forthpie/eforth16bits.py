@@ -29,38 +29,27 @@ def WR(*args):
 L = Label
 LR = LabelReference
 
-def bootstrap_16bits_eforth():
-    COMPILE_ONLY = Compiler.COMPILE_ONLY
-    IMMEDIATE = Compiler.IMMEDIATE
-    LEXICON_MASK = 0x07F1F #lexicon bit mask
-    compiler = Compiler(
-        cell_size=CELL_SIZE,
-        initial_code_address=CODEE,
-        initial_name_address=NAMEE,
-        initial_user_address=4*CELL_SIZE,
-        memory=Memory(EM))
-    
-    # Kernel
+def compile_kernel_words(compiler):
     compiler.compile_primitive("BYE")
     compiler.compile_primitive("?RX")
     compiler.compile_primitive("TX!")
     compiler.compile_primitive("!IO")
-    compiler.compile_primitive("doLIT", COMPILE_ONLY)
-    compiler.compile_primitive("doLIST", COMPILE_ONLY)
+    compiler.compile_primitive("doLIT", compiler.COMPILE_ONLY)
+    compiler.compile_primitive("doLIST", compiler.COMPILE_ONLY)
     compiler.compile_primitive("EXIT")
     compiler.compile_primitive("EXECUTE")
-    compiler.compile_primitive("next", COMPILE_ONLY)
-    compiler.compile_primitive("?branch", COMPILE_ONLY)
-    compiler.compile_primitive("branch", COMPILE_ONLY)
+    compiler.compile_primitive("next", compiler.COMPILE_ONLY)
+    compiler.compile_primitive("?branch", compiler.COMPILE_ONLY)
+    compiler.compile_primitive("branch", compiler.COMPILE_ONLY)
     compiler.compile_primitive("!")
     compiler.compile_primitive("@")
     compiler.compile_primitive("C!")
     compiler.compile_primitive("C@")
     compiler.compile_primitive("RP@")
-    compiler.compile_primitive("RP!", COMPILE_ONLY)
+    compiler.compile_primitive("RP!", compiler.COMPILE_ONLY)
     compiler.compile_primitive("R>")
     compiler.compile_primitive("R@")
-    compiler.compile_primitive(">R", COMPILE_ONLY)
+    compiler.compile_primitive(">R", compiler.COMPILE_ONLY)
     compiler.compile_primitive("SP@")
     compiler.compile_primitive("SP!")
     compiler.compile_primitive("DROP")
@@ -74,11 +63,12 @@ def bootstrap_16bits_eforth():
     compiler.compile_primitive("UM+")
     compiler.compile_primitive("UM/MOD")
     compiler.compile_primitive("DEBUG")
+    return compiler
 
-    # System and user variables
+def compile_system_and_user_variables(compiler):
     compiler.compile_colon("doVAR",
         [WR("R>"), (WR("EXIT"))],
-        COMPILE_ONLY)
+        compiler.COMPILE_ONLY)
 
     compiler.compile_colon("UP",
         [WR("doVAR"), UPP])
@@ -86,7 +76,7 @@ def bootstrap_16bits_eforth():
         WR("UM+", "DROP", "EXIT"))
     compiler.compile_colon("doUSER",
         WR("R>", "@", "UP", "@", "+", "EXIT"),
-        COMPILE_ONLY)
+        compiler.COMPILE_ONLY)
     compiler.compile_user("SP0")
     compiler.compile_user("RP0")
     compiler.compile_user("'?KEY")
@@ -96,7 +86,7 @@ def bootstrap_16bits_eforth():
     compiler.compile_user("'ECHO")
     compiler.compile_user("'PROMPT")
     compiler.compile_user("BASE")
-    compiler.compile_user("tmp", COMPILE_ONLY)
+    compiler.compile_user("tmp", compiler.COMPILE_ONLY)
     compiler.compile_user("SPAN")
     compiler.compile_user(">IN")
     compiler.compile_user("#TIB", cells=2)
@@ -112,12 +102,13 @@ def bootstrap_16bits_eforth():
     compiler.compile_user("LAST")
     compiler.compile_colon("doVOC",
         WR("R>", "CONTEXT", "!", "EXIT"),
-        COMPILE_ONLY)
+        compiler.COMPILE_ONLY)
     compiler.compile_colon("FORTH",
         [WR("doVOC"), 0, 0]
     )
-    
-    # Common functions
+    return compiler
+
+def compile_common_words(compiler):
     compiler.compile_colon("?DUP",
         [WR("DUP"),
         WR("?branch"), LR("?DUP1"),
@@ -133,7 +124,7 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("2DUP",
         code("OVER OVER EXIT")
     )
-    # + is defined above because doUser requires it
+    # + is defined in compile_system_and_user_variables() because doUser requires it
     compiler.compile_colon("NOT",
         [WR("doLIT"), -1, WR("XOR"), WR("EXIT")
     ])
@@ -154,8 +145,9 @@ def bootstrap_16bits_eforth():
         WR("?branch"), LR("ABS1"),
         WR("NEGATE"), L("ABS1"), WR("EXIT")]
     )
-    
-    # Comparison
+    return compiler
+
+def compile_comparison_words(compiler):
     compiler.compile_colon("=",
         [WR("XOR"),
         WR("?branch"), LR("=1"),
@@ -189,7 +181,9 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("WITHIN",
         code("OVER - >R - R> U< EXIT")
     )
+    return compiler
 
+def compile_divide_words(compiler):
     # Divide
     # TODO: I was not able to implement this word in Forth so I created a primitive for it.
     # TODO: Come back on it later...
@@ -234,7 +228,9 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("/",
         [WR("/MOD"), WR("SWAP"), WR("DROP"), WR("EXIT")]
     )
-    # Multiply
+    return compiler
+
+def compile_multiply_words(compiler):
     compiler.compile_colon("UM*",
         [WR("doLIT"), 0, WR("SWAP"), WR("doLIT"), 15, WR(">R"),
     L("UMST1"), WR("DUP"), WR("UM+"), WR(">R"), WR(">R"),
@@ -261,8 +257,9 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("*/",
         [WR("*/MOD"), WR("SWAP"), WR("DROP"), WR("EXIT")]
     )
+    return compiler
 
-    # Memory Alignment
+def compile_memory_alignment_words(compiler):
     compiler.compile_colon("CELL+",
         [WR("doLIT"), compiler.cell_size, WR("+"), WR("EXIT")]
     )
@@ -297,8 +294,9 @@ def bootstrap_16bits_eforth():
         [WR("doLIT"), 1, WR("+"), WR("CELLS"),
         WR("SP@"), WR("+"), WR("@"), WR("EXIT")]
     )
+    return compiler
 
-    # Memory Access
+def compile_memory_access_words(compiler):
     compiler.compile_colon("+!",
         [WR("SWAP"), WR("OVER"), WR("@"), WR("+"),
         WR("SWAP"), WR("!"), WR("EXIT")]
@@ -365,8 +363,9 @@ def bootstrap_16bits_eforth():
         WR("2DUP"), WR("C!"), WR("doLIT"), 1, WR("+"),
         WR("SWAP"), WR("CMOVE"), WR("R>"), WR("EXIT")]
     )
+    return compiler
 
-    # Numeric output, single precision
+def compile_numeric_output_single_precision_words(compiler):
     compiler.compile_colon("DIGIT",
         [WR("doLIT"), 9, WR("OVER"), WR("<"),
         WR("doLIT"), 7, WR("AND"), WR("+"),
@@ -413,8 +412,9 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("DECIMAL",
         [WR("doLIT"), 10, WR("BASE"), WR("!"), WR("EXIT")]
     )
+    return compiler
 
-    # Numeric input, single precision
+def compile_numeric_input_single_precision_words(compiler):
     compiler.compile_colon("DIGIT?",
         [WR(">R"), WR("doLIT"), ord('0'), WR("-"),
         WR("doLIT"), 9, WR("OVER"), WR("<"),
@@ -448,8 +448,9 @@ def bootstrap_16bits_eforth():
     L("NUMQ6"), WR("R>"), WR("2DROP"),
         WR("R>"), WR("BASE"), WR("!"), WR("EXIT")]
     )
+    return compiler
 
-    # Basic I/O
+def compile_basic_io_words(compiler):
     compiler.compile_colon("?KEY",
         [WR("'?KEY"), WR("@EXECUTE"), WR("EXIT")]
     )
@@ -495,15 +496,15 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("do$",
         [WR("R>"), WR("R@"), WR("R>"), WR("COUNT"), WR("+"),
         WR("ALIGNED"), WR(">R"), WR("SWAP"), WR(">R"), WR("EXIT")],
-        COMPILE_ONLY
+        compiler.COMPILE_ONLY
     )
     compiler.compile_colon('$"|',
         [WR("do$"), WR("EXIT")],
-        COMPILE_ONLY
+        compiler.COMPILE_ONLY
     )
     compiler.compile_colon('."|',
         [WR("do$"), WR("COUNT"), WR("TYPE"), WR("EXIT")],
-        COMPILE_ONLY
+        compiler.COMPILE_ONLY
     )
     compiler.compile_colon(".R",
         [WR(">R"), WR("str"), WR("R>"), WR("OVER"), WR("-"),
@@ -527,8 +528,9 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("?",
         [WR("@"), WR("."), WR("EXIT")]
     )
+    return compiler
 
-    # Parsing
+def compile_parsing_words(compiler):
     compiler.compile_colon("parse",
         [WR("tmp"), WR("!"), WR("OVER"), WR(">R"), WR("DUP"),
         WR("?branch"), LR("PARS8"),
@@ -566,15 +568,15 @@ def bootstrap_16bits_eforth():
     )
     compiler.compile_colon(".(",
         [WR("doLIT"), ord('('), WR("PARSE"), WR("TYPE"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("(",
         [WR("doLIT"), ord(')'), WR("PARSE"), WR("2DROP"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("\\",
         [WR("#TIB"), WR("@"), WR(">IN"), WR("!"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("CHAR",
         [WR("BL"), WR("PARSE"), WR("DROP"), WR("C@"), WR("EXIT")]
@@ -587,8 +589,9 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("WORD",
         [WR("PARSE"), WR("HERE"), WR("PACK$"), WR("EXIT")]
     )
+    return compiler
 
-    # Dictionary search
+def compile_dictionary_search_words(compiler):
     compiler.compile_colon("NAME>",
         [WR("CELL-"), WR("CELL-"), WR("@"), WR("EXIT")]
     )
@@ -612,7 +615,7 @@ def bootstrap_16bits_eforth():
     L("FIND1"), WR("@"), WR("DUP"),
         WR("?branch"), LR("FIND6"),
         WR("DUP"), WR("@"),
-        WR("doLIT"), LEXICON_MASK, WR("AND"), WR("R@"), WR("XOR"),
+        WR("doLIT"), compiler.LEXICON_MASK, WR("AND"), WR("R@"), WR("XOR"),
         WR("?branch"), LR("FIND2"),
         WR("CELL+"), WR("doLIT"), -1,
         WR("branch"), LR("FIND3"),
@@ -641,7 +644,9 @@ def bootstrap_16bits_eforth():
     L("NAMQ3"), WR("R>"), WR("DROP"),
         WR("doLIT"), 0, WR("EXIT")]
     )
+    return compiler
 
+def compile_terminal_response_words(compiler):
     # Terminal response
     compiler.compile_colon("^H",
         [WR(">R"), WR("OVER"), WR("R>"), WR("SWAP"), WR("OVER"), WR("XOR"),
@@ -685,8 +690,9 @@ def bootstrap_16bits_eforth():
         [WR("TIB"), WR("doLIT"), 80, WR("'EXPECT"), WR("@EXECUTE"), WR("#TIB"), WR("!"),
         WR("DROP"), WR("doLIT"), 0, WR(">IN"), WR("!"), WR("EXIT")]
     )
+    return compiler
 
-    # Error handling
+def compile_error_handling_words(compiler):
     compiler.compile_colon("CATCH",
         [WR("SP@"), WR(">R"), WR("HANDLER"), WR("@"), WR(">R"),
         WR("RP@"), WR("HANDLER"), WR("!"), WR("EXECUTE"),
@@ -712,14 +718,15 @@ def bootstrap_16bits_eforth():
         [WR("?branch"), LR("ABOR1"),
         WR("do$"), WR("THROW"),
     L("ABOR1"), WR("do$"), WR("DROP"), WR("EXIT")],
-        COMPILE_ONLY
+        compiler.COMPILE_ONLY
     )
+    return compiler
 
-    # The text interpreter
+def compile_text_interpreter_words(compiler):
     compiler.compile_colon("$INTERPRET",
         [WR("NAME?"), WR("?DUP"),
         WR("?branch"), LR("INTE1"),
-        WR("@"), WR("doLIT"), COMPILE_ONLY, WR("AND"),
+        WR("@"), WR("doLIT"), compiler.COMPILE_ONLY, WR("AND"),
         WR('abort"'), " compile only",
         WR("EXECUTE"), WR("EXIT"),
     L("INTE1"), WR("'NUMBER"), WR("@EXECUTE"),
@@ -729,7 +736,7 @@ def bootstrap_16bits_eforth():
     )
     compiler.compile_colon("[",
         [WR("doLIT"), WR("$INTERPRET"), WR("'EVAL"), WR("!"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon(".OK",
         [WR("doLIT"), WR("$INTERPRET"), WR("'EVAL"), WR("@"), WR("="),
@@ -749,8 +756,9 @@ def bootstrap_16bits_eforth():
         WR("branch"), LR("EVAL1"),
     L("EVAL2"), WR("DROP"), WR("'PROMPT"), WR("@EXECUTE"), WR("EXIT")]
     )
+    return compiler
 
-    # Shell
+def compile_shell_words(compiler):
     compiler.compile_colon("PRESET",
         [WR("SP0"), WR("@"), WR("SP!"),
         WR("doLIT"), TIBB, WR("#TIB"), WR("CELL+"), WR("!"), WR("EXIT")]
@@ -758,7 +766,7 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("xio",
         [WR("doLIT"), WR("accept"), WR("'EXPECT"), WR("2!"),
         WR("'ECHO"), WR("2!"), WR("EXIT")],
-        COMPILE_ONLY
+        compiler.COMPILE_ONLY
     )
     compiler.compile_colon("FILE",
         [WR("doLIT"), WR("PACE"), WR("doLIT"), WR("DROP"),
@@ -792,8 +800,9 @@ def bootstrap_16bits_eforth():
     L("QUIT4"), WR("PRESET"),
         WR("branch"), LR("QUIT1") ] 
     )
+    return compiler
 
-    # The compiler
+def compile_compiler_words(compiler):
     compiler.compile_colon("'",
         [WR("TOKEN"), WR("NAME?"),
         WR("?branch"), LR("TICK1"),
@@ -809,16 +818,16 @@ def bootstrap_16bits_eforth():
     )
     compiler.compile_colon("[COMPILE]",
         [WR("'"), WR(","), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("COMPILE",
         [WR("R>"), WR("DUP"), WR("@"), WR(","),
         WR("CELL+"), WR(">R"), WR("EXIT")],
-        COMPILE_ONLY
+        compiler.COMPILE_ONLY
     )
     compiler.compile_colon("LITERAL",
         [WR("COMPILE"), WR("doLIT"), WR(","), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon('$,"',
         [WR("doLIT"), ord('"'), WR("WORD"),
@@ -827,73 +836,76 @@ def bootstrap_16bits_eforth():
     )
     compiler.compile_colon("RECURSE",
         [WR("LAST"), WR("@"), WR("NAME>"), WR(","), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
-    
+    return compiler
+
+def compile_structure_words(compiler):
     # Structures
     compiler.compile_colon("FOR",
         [WR("COMPILE"), WR(">R"), WR("HERE"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("BEGIN",
         [WR("HERE"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("NEXT",
         [WR("COMPILE"), WR("next"), WR(","), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("UNTIL",
         [WR("COMPILE"), WR("?branch"), WR(","), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("AGAIN",
         [WR("COMPILE"), WR("branch"), WR(","), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("IF",
         [WR("COMPILE"), WR("?branch"), WR("HERE"),
         WR("doLIT"), 0, WR(","), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("AHEAD",
         [WR("COMPILE"), WR("branch"), WR("HERE"), WR("doLIT"), 0, WR(","), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("REPEAT",
         [WR("AGAIN"), WR("HERE"), WR("SWAP"), WR("!"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("THEN",
         [WR("HERE"), WR("SWAP"), WR("!"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("AFT",
         [WR("DROP"), WR("AHEAD"), WR("BEGIN"), WR("SWAP"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("ELSE",
         [WR("AHEAD"), WR("SWAP"), WR("THEN"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon("WHILE",
         [WR("IF"), WR("SWAP"), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon('ABORT"',
         [WR("COMPILE"), WR('abort"'), WR('$,"'), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon('$"',
         [WR("COMPILE"), WR('$"|'), WR('$,"'), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
     compiler.compile_colon('."',
         [WR("COMPILE"), WR('."|'), WR('$,"'), WR("EXIT")],
-        IMMEDIATE
+        compiler.IMMEDIATE
     )
+    return compiler
 
-    # Name compiler
+def compile_name_compiler_words(compiler):
     compiler.compile_colon("?UNIQUE",
         [WR("DUP"), WR("NAME?"),
         WR("?branch"), LR("UNIQ1"),
@@ -914,12 +926,13 @@ def bootstrap_16bits_eforth():
     L("PNAM1"), WR('$"|'), " name",
         WR("THROW")]
     )
+    return compiler
 
-    # Forth compiler
+def compile_forth_compiler_words(compiler):
     compiler.compile_colon("$COMPILE",
         [WR("NAME?"), WR("?DUP"),
         WR("?branch"), LR("SCOM2"),
-        WR("@"), WR("doLIT"), IMMEDIATE, WR("AND"),
+        WR("@"), WR("doLIT"), compiler.IMMEDIATE, WR("AND"),
         WR("?branch"), LR("SCOM1"),
         WR("EXECUTE"), WR("EXIT"),
     L("SCOM1"), WR(","), WR("EXIT"),
@@ -933,7 +946,7 @@ def bootstrap_16bits_eforth():
     )
     compiler.compile_colon(";",
         [WR("COMPILE"), WR("EXIT"), WR("["), WR("OVERT"), WR("EXIT")],
-        IMMEDIATE+COMPILE_ONLY
+        compiler.IMMEDIATE+compiler.COMPILE_ONLY
     )
     compiler.compile_colon("]",
         [WR("doLIT"), WR("$COMPILE"), WR("'EVAL"), WR("!"), WR("EXIT")]
@@ -947,11 +960,12 @@ def bootstrap_16bits_eforth():
         WR("]"), WR("EXIT")]
     )
     compiler.compile_colon("IMMEDIATE",
-        [WR("doLIT"), IMMEDIATE, WR("LAST"), WR("@"), WR("@"), WR("OR"),
+        [WR("doLIT"), compiler.IMMEDIATE, WR("LAST"), WR("@"), WR("@"), WR("OR"),
         WR("LAST"), WR("@"), WR("!"), WR("EXIT")]
     )
+    return compiler
 
-    # Defining words
+def compile_defining_words(compiler):
     compiler.compile_colon("USER", # Implementation different from EFORTH.ASM !
         [WR("TOKEN"), WR("$,n"), WR("OVERT"),
         WR("doLIT"), compiler.get_primitive_by_name("doLIST").code, WR(","),
@@ -965,8 +979,9 @@ def bootstrap_16bits_eforth():
     compiler.compile_colon("VARIABLE",
         [WR("CREATE"), WR("doLIT"), 0, WR(","), WR("EXIT")]
     )
+    return compiler
 
-    # Tools
+def compile_tools_words(compiler):
     compiler.compile_colon("_TYPE",
         [WR(">R"),
         WR("branch"), LR("UTYP2"),
@@ -1026,8 +1041,9 @@ def bootstrap_16bits_eforth():
     # compiler.compile_colon("WORDS",
     #     []#TODO
     # )
+    return compiler
 
-    # Hardware reset
+def compile_hardware_reset_words(compiler):
     compiler.compile_colon("VER", #TODO: proper version number
         [WR("doLIT"), 0, WR("EXIT")]
     )
@@ -1054,7 +1070,9 @@ def bootstrap_16bits_eforth():
         WR("QUIT"),
         WR("branch"), LR("COLD1")]
     )
+    return compiler
 
+def initialize_cold_boot_memory(compiler):
     # Initialize memory with default user variable values
     LASTN = compiler.name_address + 8
     print(f"Last name address (LASTN) = {hex(LASTN)}")
@@ -1093,6 +1111,42 @@ def bootstrap_16bits_eforth():
 
     for address, value in zip(range(COLDD, COLDD+compiler.cell_size*len(init_values), compiler.cell_size), init_values):
         compiler.write_cell_at_address(address, value)
+    return compiler
+
+def bootstrap_16bits_eforth():
+    compiler = Compiler(
+        cell_size=CELL_SIZE,
+        initial_code_address=CODEE,
+        initial_name_address=NAMEE,
+        initial_user_address=4*CELL_SIZE,
+        memory=Memory(EM))
+    
+    compile_kernel_words(compiler)
+    compile_system_and_user_variables(compiler)
+    compile_common_words(compiler)
+    compile_comparison_words(compiler)
+    compile_divide_words(compiler)
+    compile_multiply_words(compiler)
+    compile_memory_alignment_words(compiler)
+    compile_memory_access_words(compiler)
+    compile_numeric_output_single_precision_words(compiler)
+    compile_numeric_input_single_precision_words(compiler)    
+    compile_basic_io_words(compiler)
+    compile_parsing_words(compiler)
+    compile_dictionary_search_words(compiler)
+    compile_terminal_response_words(compiler)
+    compile_error_handling_words(compiler)
+    compile_text_interpreter_words(compiler)
+    compile_shell_words(compiler)
+    compile_compiler_words(compiler)
+    compile_structure_words(compiler)
+    compile_name_compiler_words(compiler)
+    compile_forth_compiler_words(compiler)
+    compile_defining_words(compiler)
+    compile_tools_words(compiler)
+    compile_hardware_reset_words(compiler)
+
+    initialize_cold_boot_memory(compiler)
 
     return compiler
 

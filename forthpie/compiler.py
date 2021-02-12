@@ -61,6 +61,7 @@ class CompilerMetadata(object):
 class Compiler(MemoryManipulator):
     COMPILE_ONLY = 0x040
     IMMEDIATE = 0x080
+    LEXICON_MASK = 0x07F1F
 
     def __init__(self, cell_size, initial_code_address, initial_name_address, initial_user_address, memory, primitives_provider=ForthInterpreter):
         self.cell_size = cell_size
