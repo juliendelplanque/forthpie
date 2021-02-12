@@ -300,7 +300,6 @@ class ForthInterpreter(MemoryManipulator):
             self.push_on_data_stack(0)
         self.next()
     
-    # @debug
     @primitive(2, "TX!")
     def txem(self):
         """Send character c to output device.
