@@ -123,7 +123,7 @@ class Compiler(MemoryManipulator):
         Field     Length           Function
         -----------------------------------------------------------
         Token     cell-size bytes  code address (ca)
-        Link      cell-size bytes  name address (na) of previous word
+        Link      cell-size bytes  name address (na) of previous word, this is the address of the meta-data byte of previous name dictionary entry.
         Length    1 byte           lexicon bits (3 bits) and length of Name (5bits)
         Name      n bytes          name of word number of bytes depends on Length field
         Filler    0/cell-size byte fill to cell boundary 
