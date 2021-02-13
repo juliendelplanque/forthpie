@@ -160,7 +160,8 @@ class ForthInterpreter(MemoryManipulator):
             self.log_info(log_str)
 
     def _next(self):
-        self._log_ip(lambda wn: wn in ["QUIT"])
+        # self._log_ip(lambda wn: wn in ["QUIT", ".OK"])
+        self._log_ip()
         self.word_pointer = self.read_cell_at_address(self.interpreter_pointer)
         self.interpreter_pointer += self.cell_size
         self.step(self.read_cell_at_address(self.word_pointer))

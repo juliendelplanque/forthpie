@@ -764,8 +764,8 @@ def compile_shell_words(compiler):
         WR("doLIT"), TIBB, WR("#TIB"), WR("CELL+"), WR("!"), WR("EXIT")]
     )
     compiler.compile_colon("xio",
-        [WR("doLIT"), WR("accept"), WR("'EXPECT"), WR("2!"),
-        WR("'ECHO"), WR("2!"), WR("EXIT")],
+        [WR("doLIT"), WR("accept"), WR("'EXPECT"), WR("!"),
+        WR("'TAP"), WR("!"), WR("'ECHO"), WR("!"), WR("'PROMPT"), WR("!"), WR("EXIT")],
         compiler.COMPILE_ONLY
     )
     compiler.compile_colon("FILE",
@@ -777,7 +777,7 @@ def compile_shell_words(compiler):
         WR("doLIT"), WR("kTAP"), WR("xio"), WR("EXIT")]
     )
     compiler.compile_colon("I/O",
-        [WR("doVAR"), WR("'?KEY"), WR("TX!")]
+        [WR("doVAR"), WR("?RX"), WR("TX!")]
     )
     compiler.compile_colon("CONSOLE",
         [WR("I/O"), WR("2@"), WR("'?KEY"), WR("2!"),
@@ -790,14 +790,14 @@ def compile_shell_words(compiler):
         WR("doLIT"), WR("EVAL"), WR("CATCH"), WR("?DUP"),
         WR("?branch"), LR("QUIT2"),
         WR("'PROMPT"), WR("@"), WR("SWAP"),
-        WR("CONSOLE"), WR("NULL$"), WR("DEBUG"), WR("OVER"), WR("XOR"),
+        WR("CONSOLE"), WR("NULL$"), WR("OVER"), WR("XOR"),
         WR("?branch"), LR("QUIT3"),
         WR("SPACE"), WR("COUNT"), WR("TYPE"),
         WR('."|'), ' ? ',
-    L("QUIT3"), WR(".OK"), WR("XOR"),
+    L("QUIT3"), WR("doLIT"), WR(".OK"), WR("XOR"),
         WR("?branch"), LR("QUIT4"),
         WR("doLIT"), 27, WR("EMIT"), # 27 = Error escape
-    L("QUIT4"), WR("PRESET"),
+    L("QUIT4"), WR("PRESET"), 
         WR("branch"), LR("QUIT1") ] 
     )
     return compiler
@@ -1167,7 +1167,7 @@ def run():
     # print(f"NAMEE = {hex(NAMEE)}")
     # print(f"CODEE = {hex(CODEE)}")
     logging.basicConfig()
-    logging.root.setLevel(logging.INFO)
+    logging.root.setLevel(logging.WARNING)
 
     compiler = bootstrap_16bits_eforth()
     interpreter_class = ForthInterpreter
@@ -1205,7 +1205,7 @@ def run():
 
         print("User variables:")
         for address in range(UPP, UPP+compiler.user_address, compiler.cell_size):
-            print("\t", hex(interpreter.read_cell_at_address(address)))
+            print(f"\t{hex(address)}: ", hex(interpreter.read_cell_at_address(address)))
         
         print("TIB[0:10]:")
         for address in range(TIBB, TIBB+10*compiler.cell_size, compiler.cell_size):
