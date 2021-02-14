@@ -592,6 +592,10 @@ def compile_parsing_words(compiler):
     return compiler
 
 def compile_dictionary_search_words(compiler):
+    # NOTE: this word is not in EForth but is useful to avoid hardcode lexicon bit mask
+    compiler.compile_colon("LEXICON_MASK",
+        [WR("doLIT"), compiler.LEXICON_MASK, WR("EXIT")])
+
     compiler.compile_colon("NAME>",
         [WR("CELL-"), WR("CELL-"), WR("@"), WR("EXIT")]
     )
@@ -615,7 +619,7 @@ def compile_dictionary_search_words(compiler):
     L("FIND1"), WR("@"), WR("DUP"),
         WR("?branch"), LR("FIND6"),
         WR("DUP"), WR("@"),
-        WR("doLIT"), compiler.LEXICON_MASK, WR("AND"), WR("R@"), WR("XOR"),
+        WR("LEXICON_MASK"), WR("AND"), WR("R@"), WR("XOR"),
         WR("?branch"), LR("FIND2"),
         WR("CELL+"), WR("doLIT"), -1,
         WR("branch"), LR("FIND3"),
