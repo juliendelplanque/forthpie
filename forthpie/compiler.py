@@ -1,36 +1,5 @@
 from .forth import *
-
-class WordReference(object):
-    def __init__(self, name):
-        self.name = name
-    
-    def __str__(self):
-        return f"{self.__class__.__name__}({self.name})"
-
-class Label(object):
-    def __init__(self, name):
-        self.name = name
-    
-    def __str__(self):
-        return f"{self.__class__.__name__}({self.name})"
-
-class LabelReference(object):
-    def __init__(self, name):
-        self.name = name
-        self.resolved_address = None
-    
-    def __str__(self):
-        return f"{self.__class__.__name__}({self.name})"
-
-class Byte(object):
-    def __init__(self, value):
-        self.value = value
-    
-    def __str__(self):
-        return f"{self.__class__.__name__}({self.value})"
-
-class Align(object):
-    pass
+from .model import WordReference, Label, LabelReference, Byte, Align, ImageVisitor
 
 class WordNotInDictionary(Exception):
     def __init__(self, name):
@@ -238,3 +207,36 @@ class Compiler(MemoryManipulator):
         self.compile_colon_header(lexicon_bits, name)
         self.compile_word_body(tokens)
         self.compiler_metadata.last().end_address = self.code_address-self.cell_size
+
+class ImageCompiler(ImageVisitor):
+    def __init__(self, compiler):
+        super().__init__()
+        self.compiler = compiler
+    
+    def visit_Image(self, image):
+        for word_set in image.words_sets:
+            word_set.accept_visitor(self)
+    
+    def visit_WordsSet(self, words_set):
+        for word in words_set:
+            word.accept_visitor(self)
+
+    def visit_UserVariable(self, user_variable):
+        self.compiler.compile_user(
+            user_variable.name,
+            user_variable.lexicon_bits(self.compiler),
+            user_variable.cells
+        )
+    
+    def visit_ColonWord(self, colon_word):
+        self.compiler.compile_colon(
+            colon_word.name,
+            colon_word.tokens,
+            colon_word.lexicon_bits(self.compiler)
+        )
+    
+    def visit_Primitive(self, primitive):
+        self.compiler.compile_primitive(
+            primitive.name,
+            colon_word.lexicon_bits(self.compiler)
+        )

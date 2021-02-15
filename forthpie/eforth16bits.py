@@ -1,5 +1,6 @@
 from .forth import Memory
-from .compiler import Compiler, WordReference, Label, LabelReference, Byte, Align
+from .compiler import Compiler
+from .model import WR, code, L, LR, Byte, Align
 
 CELL_SIZE = 2
 VOCSS = 8
@@ -14,20 +15,6 @@ SPP = 0x3E7F #TIBB-8*CELL_SIZE # start of data stack (SP0)
 UPP = 0x3F80 #EM-256*CELL_SIZE # start of user area (UP0)
 NAMEE = 0x3BFF #UPP-8*CELL_SIZE # name dictionary
 CODEE = 0x180 #COLDD+US #code dictionary
-
-def code(string):
-    return [WordReference(s) for s in string.split()] 
-
-def WR(*args):
-    if len(args) == 1:
-        return WordReference(args[0])
-    elif len(args) > 1:
-        return [WordReference(s) for s in args]
-    else:
-        Exception("Can not build WR")
-
-L = Label
-LR = LabelReference
 
 def compile_kernel_words(compiler):
     compiler.compile_primitive("BYE")
@@ -1217,27 +1204,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-    # from more_itertools import grouper, peekable
-    # c = bootstrap_16bits_eforth()
-    # name_tokens_iterator = peekable(c.name_tokens_iterator())
-    # try:
-    #     while True:
-    #         name_token = next(name_tokens_iterator)
-    #         next_name_token = name_tokens_iterator.peek()
-    #         first_xt_address = c.read_execution_token_address(name_token)
-    #         cells_to_show = 20
-    #         # last_xt_address = c.read_execution_token_address(next_name_token)
-    #         print(c.read_word_name(name_token), " xt: ", hex(first_xt_address))
-    #         print([hex(x) for x in range(first_xt_address,first_xt_address+cells_to_show*c.cell_size,c.cell_size)])
-    #         print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[first_xt_address:first_xt_address+cells_to_show*c.cell_size], c.cell_size)])
-    #         # print("---")
-    #         # print([hex(x) for x in range(last_xt_address,first_xt_address+c.cell_size,c.cell_size)])
-    #         # print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[last_xt_address:first_xt_address+c.cell_size], c.cell_size)])
-    #         print("####")
-    # except StopIteration:
-    #     print("Finished listing words")
-    
-    # xt = c.read_execution_token_address(c.lookup_word(WordReference("?DUP")))
-    # print(c.memory[xt:xt+6])
-    # print([hex(x) for x in range(0x348,0x348+18,2)])
-    # print([hex((b1<<8)|b2) for b1,b2 in grouper(c.memory[0x348:0x348+18], 2)])
