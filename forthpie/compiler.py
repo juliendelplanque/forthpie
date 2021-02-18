@@ -10,20 +10,20 @@ class WordMetaData(object):
         self.name = word_name
         self.start_address = start_address
         self.end_address = end_address
-    
+
     def is_part_of_code(self, address):
         return self.start_address <= address and address <= self.end_address
 
 class CompilerMetadata(object):
     def __init__(self):
         self.words_metadata = []
-    
+
     def add_word_meta(self, word_meta):
         self.words_metadata.append(word_meta)
-    
+
     def last(self):
         return self.words_metadata[-1]
-    
+
     def word_address_belongs_to(self, address):
         return next(m for m in self.words_metadata if m.is_part_of_code(address))
 
@@ -40,7 +40,7 @@ class Compiler(MemoryManipulator):
         self.memory = memory
         self.primitives_provider = primitives_provider
         self.compiler_metadata = CompilerMetadata()
-    
+
     def get_primitive_by_name(self, name):
         return self.primitives_provider.get_primitive_by_name(name)
 
@@ -48,31 +48,31 @@ class Compiler(MemoryManipulator):
         name_length = self.memory[name_token_address+2*self.cell_size] & 0b11111
         name_first_address = name_token_address+2*self.cell_size+1
         return "".join([ chr(c) for c in self.memory[name_first_address:name_first_address+name_length] ])
-    
+
     def read_previous_name_token_address(self, name_token_address):
         return self.read_cell_at_address(name_token_address+self.cell_size) - 2 * self.cell_size # NOTE: I modified this
-    
+
     def read_execution_token_address(self, name_token_address):
         return self.read_cell_at_address(name_token_address)
-    
+
     def name_tokens_iterator(self):
         current_address = self.name_address
         while current_address != 0:
             yield current_address
             current_address = self.read_previous_name_token_address(current_address)
-    
+
     def name_token(self, word_reference):
         """Retrieve the name token from a word_reference object and returns it.
         """
         current_address = self.name_address
         while current_address != 0 and self.read_word_name(current_address) != word_reference.name:
             current_address = self.read_previous_name_token_address(current_address)
-        
+
         if self.read_word_name(current_address) == word_reference.name:
             return self.read_execution_token_address(current_address)
-        
+
         raise WordNotInDictionary(word_reference.name)
-    
+
     def lookup_word(self, word_reference):
         """Lookup a word execution token from a word_reference object and returns it.
         """
@@ -95,7 +95,7 @@ class Compiler(MemoryManipulator):
         Link      cell-size bytes  name address (na) of previous word, this is the address of the meta-data byte of previous name dictionary entry.
         Length    1 byte           lexicon bits (3 bits) and length of Name (5bits)
         Name      n bytes          name of word number of bytes depends on Length field
-        Filler    0/cell-size byte fill to cell boundary 
+        Filler    0/cell-size byte fill to cell boundary
         """
         self.code_address = self.align_address(self.code_address)
         code_address = self.code_address
@@ -105,7 +105,7 @@ class Compiler(MemoryManipulator):
             raise Exception("Name too long, can not be compiled.")
         # if lexicon_bits > 0b111:
         #     raise Exception("Only 3 bits are available for lexicon bits.")
-        
+
         metadataByte = name_length | lexicon_bits
         # bytes_to_allocate = (2 * self.cell_size) + 1 + name_length
         # padding = self.cell_size - (bytes_to_allocate % self.cell_size)
@@ -126,7 +126,7 @@ class Compiler(MemoryManipulator):
         self.compiler_metadata.add_word_meta(WordMetaData(name, self.code_address))
         self.write_cell_at_address(self.code_address, self.get_primitive_by_name(primitive_name).code)
         self.code_address += self.cell_size
-    
+
     def compile_primitive(self, name, lexicon_bits=0):
         self.compile_code_header(lexicon_bits, name, name)
         self.compiler_metadata.last().end_address = self.code_address-self.cell_size
@@ -135,7 +135,7 @@ class Compiler(MemoryManipulator):
         """Compile a colon definition header.
         """
         self.compile_code_header(lexicon_bits, name, "doLIST")
-    
+
     def compile_user_header(self, lexicon_bits, name):
         """Compile a user variable header.
         """
@@ -145,13 +145,13 @@ class Compiler(MemoryManipulator):
         self.write_cell_at_address(self.code_address, self.user_address)
         self.code_address += self.cell_size
         self.user_address += self.cell_size
-    
+
     def compile_user(self, name, lexicon_bits=0, cells=1):
         self.compile_user_header(lexicon_bits, name)
         for _ in range(cells-1):
             self.user_address += self.cell_size
         self.compiler_metadata.last().end_address = self.code_address-self.cell_size
-    
+
     def align_address(self, address):
         if address % self.cell_size == 0:
             return address
@@ -202,7 +202,7 @@ class Compiler(MemoryManipulator):
                 self.code_address = self.align_address(self.code_address)
             else:
                 raise Exception(f"Unknown token: {token}")
-    
+
     def compile_colon(self, name, tokens, lexicon_bits=0):
         self.compile_colon_header(lexicon_bits, name)
         self.compile_word_body(tokens)
@@ -212,31 +212,32 @@ class ImageCompiler(ImageVisitor):
     def __init__(self, compiler):
         super().__init__()
         self.compiler = compiler
-    
+
     def visit_Image(self, image):
-        for word_set in image.words_sets:
+        for word_set in image:
             word_set.accept_visitor(self)
-    
+        image.initialize_memory(self.compiler)
+
     def visit_WordsSet(self, words_set):
         for word in words_set:
             word.accept_visitor(self)
 
     def visit_UserVariable(self, user_variable):
         self.compiler.compile_user(
-            user_variable.name,
-            user_variable.lexicon_bits(self.compiler),
-            user_variable.cells
+            name=user_variable.name,
+            lexicon_bits=user_variable.lexicon_bits(self.compiler),
+            cells=user_variable.cells
         )
-    
+
     def visit_ColonWord(self, colon_word):
         self.compiler.compile_colon(
-            colon_word.name,
-            colon_word.tokens,
-            colon_word.lexicon_bits(self.compiler)
+            name=colon_word.name,
+            tokens=colon_word.tokens,
+            lexicon_bits=colon_word.lexicon_bits(self.compiler)
         )
-    
+
     def visit_Primitive(self, primitive):
         self.compiler.compile_primitive(
-            primitive.name,
-            colon_word.lexicon_bits(self.compiler)
+            name=primitive.name,
+            lexicon_bits=primitive.lexicon_bits(self.compiler)
         )
