@@ -32,9 +32,9 @@ def test_write_cell_at_address(interpreter):
     assert interpreter.memory[52] == 2
     assert interpreter.memory[53] == 1
 
-def test_lookup_primitive(interpreter):
+def test_get_primitive_by_address(interpreter):
 
-    bye = interpreter.lookup_primitive(0)
+    bye = interpreter.get_primitive_by_address(0)
 
     assert bye.function.__name__ == "bye"
 

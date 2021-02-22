@@ -1166,7 +1166,8 @@ def by_the_book_eforth_image(start_of_data_stack_address,
                              doLISTCode,
                              version_number,
                              terminal_input_buffer_address,
-                             cold_boot_address):
+                             cold_boot_address,
+                             include_tools_wordset=False):
     image = Image(
         by_the_book_primitives(),
         by_the_book_system_and_user_variables(start_of_user_area_address, number_of_vocabularies),
@@ -1190,7 +1191,6 @@ def by_the_book_eforth_image(start_of_data_stack_address,
         by_the_book_name_compiler_words(),
         by_the_book_forth_compiler_words(immediate_bit, doLISTCode),
         by_the_book_defining_words(doLISTCode),
-        by_the_book_tools_words(),
         memory_initializer=by_the_book_memory_initialization(
             start_of_data_stack_address,
             start_of_return_stack_address,
@@ -1198,6 +1198,9 @@ def by_the_book_eforth_image(start_of_data_stack_address,
             number_of_vocabularies,
             cold_boot_address)
     )
+
+    if include_tools_wordset:
+        image.add_words_set(by_the_book_tools_words())
 
     image.add_words_set(
         by_the_book_hardware_reset_words(

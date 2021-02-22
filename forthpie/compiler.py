@@ -1,4 +1,5 @@
 from .forth import *
+from .primitives import by_the_book_primitives_store
 from .model import WordReference, Label, LabelReference, Byte, Align, ImageVisitor
 
 class WordNotInDictionary(Exception):
@@ -32,7 +33,7 @@ class Compiler(MemoryManipulator):
     IMMEDIATE = 0x080
     LEXICON_MASK = 0x07F1F
 
-    def __init__(self, cell_size, initial_code_address, initial_name_address, initial_user_address, memory, primitives_provider=ForthInterpreter):
+    def __init__(self, cell_size, initial_code_address, initial_name_address, initial_user_address, memory, primitives_provider=by_the_book_primitives_store):
         self.cell_size = cell_size
         self.code_address = initial_code_address
         self.name_address = initial_name_address

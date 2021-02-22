@@ -64,8 +64,8 @@ def run():
     logging.root.setLevel(logging.WARNING)
 
     compiler = bootstrap_16bits_eforth()
-    interpreter_class = ForthInterpreter
-    # interpreter_class = StatisticsInterpreter
+    # interpreter_class = ForthInterpreter
+    interpreter_class = StatisticsInterpreter
     interpreter = interpreter_class(
                     compiler.cell_size,
                     input_stream=sys.stdin,
@@ -80,7 +80,7 @@ def run():
     interpreter.memory = compiler.memory
     try:
         interpreter.start()
-        # print(interpreter.execution_statistics.word_names_to_count(compiler.compiler_metadata))
+        print(interpreter.execution_statistics.word_names_to_count(compiler.compiler_metadata))
     finally:
         print("Data stack:")
         for address in range(SPP, interpreter.data_stack_pointer, -compiler.cell_size):
