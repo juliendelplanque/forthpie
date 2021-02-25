@@ -2,6 +2,7 @@ from .forth import Memory
 from .compiler import Compiler, ImageCompiler
 from .model import *
 from .eforth.images.by_the_book import by_the_book_eforth_image
+from .eforth.primitives.by_the_book import primitives_store
 
 CELL_SIZE = 2
 VOCSS = 8
@@ -23,7 +24,8 @@ def bootstrap_16bits_eforth():
         initial_code_address=CODEE,
         initial_name_address=NAMEE,
         initial_user_address=4*CELL_SIZE,
-        memory=Memory(EM))
+        memory=Memory(EM),
+        primitives_provider=primitives_store)
 
     image = by_the_book_eforth_image(
         start_of_data_stack_address=SPP,
@@ -37,7 +39,8 @@ def bootstrap_16bits_eforth():
         doLISTCode=5, #TODO: do not hardcode
         version_number=0,
         terminal_input_buffer_address=TIBB,
-        cold_boot_address=COLDD
+        cold_boot_address=COLDD,
+        include_tools_wordset=True
     )
 
     ImageCompiler(compiler).visit_Image(image)
@@ -67,7 +70,8 @@ def run():
     # interpreter_class = ForthInterpreter
     interpreter_class = StatisticsInterpreter
     interpreter = interpreter_class(
-                    compiler.cell_size,
+                    cell_size=compiler.cell_size,
+                    primitives=primitives_store,
                     input_stream=sys.stdin,
                     output_stream=sys.stdout,
                     logger=logging,

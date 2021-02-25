@@ -2,8 +2,6 @@
 
 import io
 
-from .primitives import by_the_book_primitives_store
-
 class NotAByte(Exception):
     def __init__(self, value):
         self.value = value
@@ -55,8 +53,8 @@ class ForthInterpreter(MemoryManipulator):
     def __init__(
         self,
         cell_size,
+        primitives,
         memory_size=0,
-        primitives=by_the_book_primitives_store,
         input_stream=None,
         output_stream=None,
         logger=None,

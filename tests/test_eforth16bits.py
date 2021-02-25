@@ -2,6 +2,7 @@ import pytest
 import logging
 
 from forthpie.forth import ForthInterpreter
+from forthpie.eforth.primitives.by_the_book import primitives_store
 from forthpie.compiler import WordReference
 WR = WordReference
 import forthpie.eforth16bits as eforth16bits
@@ -377,7 +378,7 @@ import forthpie.eforth16bits as eforth16bits
 )
 def test_WORD(to_compile, expected_data_stack):
     compiler = eforth16bits.bootstrap_16bits_eforth()
-    interpreter = ForthInterpreter(compiler.cell_size, logger=logging)
+    interpreter = ForthInterpreter(compiler.cell_size, primitives_store, logger=logging)
     interpreter.data_stack_pointer = eforth16bits.SPP
     interpreter.return_stack_pointer = eforth16bits.RPP
 

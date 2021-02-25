@@ -1,5 +1,4 @@
 from .forth import *
-from .primitives import by_the_book_primitives_store
 from .model import WordReference, Label, LabelReference, Byte, Align, ImageVisitor
 
 class WordNotInDictionary(Exception):
@@ -33,7 +32,7 @@ class Compiler(MemoryManipulator):
     IMMEDIATE = 0x080
     LEXICON_MASK = 0x07F1F
 
-    def __init__(self, cell_size, initial_code_address, initial_name_address, initial_user_address, memory, primitives_provider=by_the_book_primitives_store):
+    def __init__(self, cell_size, initial_code_address, initial_name_address, initial_user_address, memory, primitives_provider):
         self.cell_size = cell_size
         self.code_address = initial_code_address
         self.name_address = initial_name_address
@@ -111,7 +110,7 @@ class Compiler(MemoryManipulator):
         # bytes_to_allocate = (2 * self.cell_size) + 1 + name_length
         # padding = self.cell_size - (bytes_to_allocate % self.cell_size)
         # self.name_address -= (bytes_to_allocate + padding)
-        self.name_address -= (name_length + 3) * self.cell_size
+        self.name_address -= name_length + 3 * self.cell_size
 
         self.write_cell_at_address(self.name_address, code_address)
         self.write_cell_at_address(self.name_address+self.cell_size, previous_name_address+2*self.cell_size) # NOTE: I modified this

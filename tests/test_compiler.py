@@ -2,6 +2,7 @@ import pytest
 
 from forthpie.forth import Memory
 from forthpie.compiler import Compiler, WordReference
+from forthpie.eforth.primitives.by_the_book import primitives_store
 
 @pytest.fixture
 def compiler():
@@ -10,13 +11,14 @@ def compiler():
     """
     yield Compiler(
         cell_size=2,
+        primitives_provider=primitives_store,
         initial_code_address=0x180,
         initial_name_address=0x3BFF,
         initial_user_address=0x3F80,
         memory=Memory(0x3FFF+1))
 
 def test_compile_name_header(compiler):
-    expected_new_name_address = compiler.name_address - (compiler.cell_size*2 +1+len("testWord")+1)
+    expected_new_name_address = compiler.name_address - (compiler.cell_size*(2+1)+len("testWord"))
     compiler.compile_name_header(0b01000000, "testWord")
 
     assert compiler.name_address == expected_new_name_address

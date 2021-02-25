@@ -2,10 +2,11 @@ import pytest
 import io
 
 from forthpie.forth import *
+from forthpie.eforth.primitives.by_the_book import primitives_store
 
 @pytest.fixture
 def interpreter():
-    yield ForthInterpreter(4, 100)
+    yield ForthInterpreter(4, primitives_store, memory_size=100)
 
 def test_registers_are_set_to_0(interpreter):
 
