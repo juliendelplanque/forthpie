@@ -1,8 +1,9 @@
 import pytest
 
 from forthpie.forth import Memory
-from forthpie.compiler import Compiler, WordReference
+from forthpie.model import WordReference
 from forthpie.eforth.primitives.by_the_book import primitives_store
+from forthpie.eforth.compiler.by_the_book import Compiler
 
 @pytest.fixture
 def compiler():

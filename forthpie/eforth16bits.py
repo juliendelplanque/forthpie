@@ -1,8 +1,9 @@
 from .forth import Memory
-from .compiler import Compiler, ImageCompiler
+from .compiler import ImageCompiler
 from .model import *
 from .eforth.images.by_the_book import by_the_book_eforth_image
 from .eforth.primitives.by_the_book import primitives_store
+from .eforth.compiler.by_the_book import Compiler
 
 CELL_SIZE = 2
 VOCSS = 8

@@ -3,7 +3,7 @@ import logging
 
 from forthpie.forth import ForthInterpreter
 from forthpie.eforth.primitives.by_the_book import primitives_store
-from forthpie.compiler import WordReference
+from forthpie.model import WordReference
 WR = WordReference
 import forthpie.eforth16bits as eforth16bits
 
