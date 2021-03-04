@@ -27,7 +27,17 @@ class CompilerMetadata(object):
     def word_address_belongs_to(self, address):
         return next(m for m in self.words_metadata if m.is_part_of_code(address))
 
-class Compiler(MemoryManipulator):
+class AbstractCompiler(MemoryManipulator):
+    def compile_primitive(self, name, compile_only=False, immediate=False):
+        raise NotImplementedError()
+
+    def compile_user(self, name, compile_only=False, immediate=False, cells=1):
+        raise NotImplementedError()
+
+    def compile_colon(self, name, tokens, compile_only=False, immediate=False):
+        raise NotImplementedError()
+
+class Compiler(AbstractCompiler):
     COMPILE_ONLY = 0x040
     IMMEDIATE = 0x080
     LEXICON_MASK = 0x07F1F
@@ -83,7 +93,15 @@ class Compiler(MemoryManipulator):
             # Else, check if exists in primitives (a primitive is always defined before any high-level word, so they need to be searched after them.).
             return self.get_primitive_by_name(word_reference.name).code
 
-    def compile_name_header(self, lexicon_bits, name):
+    def lexicon_bits(self, compile_only, immediate):
+        value = 0
+        if compile_only:
+            value += self.COMPILE_ONLY
+        if immediate:
+            value += self.IMMEDIATE
+        return value
+
+    def compile_name_header(self, compile_only, immediate, name):
         """Compile a code definition header.
 
         From EForth and Zen, the format of an entry in the name dictionary is
@@ -106,7 +124,7 @@ class Compiler(MemoryManipulator):
         # if lexicon_bits > 0b111:
         #     raise Exception("Only 3 bits are available for lexicon bits.")
 
-        metadataByte = name_length | lexicon_bits
+        metadataByte = name_length | self.lexicon_bits(compile_only, immediate)
         # bytes_to_allocate = (2 * self.cell_size) + 1 + name_length
         # padding = self.cell_size - (bytes_to_allocate % self.cell_size)
         # self.name_address -= (bytes_to_allocate + padding)
@@ -118,36 +136,36 @@ class Compiler(MemoryManipulator):
         for address, letter in zip(range(self.name_address+2*self.cell_size+1, self.name_address+2*self.cell_size+1+name_length), name):
             self.memory[address] = ord(letter)
 
-    def compile_code_header(self, lexicon_bits, name, primitive_name):
+    def compile_code_header(self, compile_only, immediate, name, primitive_name):
         """Compile a colon definition header.
         """
-        self.compile_name_header(lexicon_bits, name)
+        self.compile_name_header(compile_only, immediate, name)
         # print(f"{name}: xt={self.code_address}")
         self.compiler_metadata.add_word_meta(WordMetaData(name, self.code_address))
         self.write_cell_at_address(self.code_address, self.get_primitive_by_name(primitive_name).code)
         self.code_address += self.cell_size
 
-    def compile_primitive(self, name, lexicon_bits=0):
-        self.compile_code_header(lexicon_bits, name, name)
+    def compile_primitive(self, name, compile_only=False, immediate=False):
+        self.compile_code_header(compile_only, immediate, name, name)
         self.compiler_metadata.last().end_address = self.code_address-self.cell_size
 
-    def compile_colon_header(self, lexicon_bits, name):
+    def compile_colon_header(self, compile_only, immediate, name):
         """Compile a colon definition header.
         """
-        self.compile_code_header(lexicon_bits, name, "doLIST")
+        self.compile_code_header(compile_only, immediate, name, "doLIST")
 
-    def compile_user_header(self, lexicon_bits, name):
+    def compile_user_header(self, compile_only, immediate, name):
         """Compile a user variable header.
         """
-        self.compile_colon_header(lexicon_bits, name)
+        self.compile_colon_header(compile_only, immediate, name)
         self.write_cell_at_address(self.code_address, self.lookup_word(WordReference("doUSER")))
         self.code_address += self.cell_size
         self.write_cell_at_address(self.code_address, self.user_address)
         self.code_address += self.cell_size
         self.user_address += self.cell_size
 
-    def compile_user(self, name, lexicon_bits=0, cells=1):
-        self.compile_user_header(lexicon_bits, name)
+    def compile_user(self, name, compile_only=False, immediate=False, cells=1):
+        self.compile_user_header(compile_only, immediate, name)
         for _ in range(cells-1):
             self.user_address += self.cell_size
         self.compiler_metadata.last().end_address = self.code_address-self.cell_size
@@ -203,8 +221,8 @@ class Compiler(MemoryManipulator):
             else:
                 raise Exception(f"Unknown token: {token}")
 
-    def compile_colon(self, name, tokens, lexicon_bits=0):
-        self.compile_colon_header(lexicon_bits, name)
+    def compile_colon(self, name, tokens, compile_only=False, immediate=False):
+        self.compile_colon_header(compile_only, immediate, name)
         self.compile_word_body(tokens)
         self.compiler_metadata.last().end_address = self.code_address-self.cell_size
 
@@ -225,7 +243,8 @@ class ImageCompiler(ImageVisitor):
     def visit_UserVariable(self, user_variable):
         self.compiler.compile_user(
             name=user_variable.name,
-            lexicon_bits=user_variable.lexicon_bits(self.compiler),
+            compile_only=user_variable.compile_only,
+            immediate=user_variable.immediate,
             cells=user_variable.cells
         )
 
@@ -233,11 +252,13 @@ class ImageCompiler(ImageVisitor):
         self.compiler.compile_colon(
             name=colon_word.name,
             tokens=colon_word.tokens,
-            lexicon_bits=colon_word.lexicon_bits(self.compiler)
+            compile_only=colon_word.compile_only,
+            immediate=colon_word.immediate
         )
 
     def visit_Primitive(self, primitive):
         self.compiler.compile_primitive(
             name=primitive.name,
-            lexicon_bits=primitive.lexicon_bits(self.compiler)
+            compile_only=primitive.compile_only,
+            immediate=primitive.immediate
         )

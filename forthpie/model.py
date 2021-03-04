@@ -40,14 +40,6 @@ class Word(object):
     def __str__(self):
         return f"{self.__class__.__name__}({self.name})"
 
-    def lexicon_bits(self, compiler):
-        value = 0
-        if self.compile_only:
-            value += compiler.COMPILE_ONLY
-        if self.immediate:
-            value += compiler.IMMEDIATE
-        return value
-
     def is_primitive(self):
         return False
 
