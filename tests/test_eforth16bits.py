@@ -5,7 +5,7 @@ from forthpie.forth import ForthInterpreter
 from forthpie.eforth.primitives.by_the_book import primitives_store
 from forthpie.model import WordReference
 WR = WordReference
-import forthpie.eforth16bits as eforth16bits
+import forthpie.eforth.eforth16bits as eforth16bits
 
 @pytest.mark.parametrize("to_compile, expected_data_stack",
     [

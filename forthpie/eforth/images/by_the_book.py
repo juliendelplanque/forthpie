@@ -1049,15 +1049,15 @@ def by_the_book_tools_words():
         L("DUMP3"), WR("DROP"), WR("R>"), WR("BASE"), WR("!"),
             WR("EXIT")]
         ),
-        ColonWord(".S",
-            [WR("CR"), WR("DEPTH"),
-            WR(">R"),
-            WR("branch"), LR("DOTS2"),
-        L("DOTS1"), WR("R@"), WR("PICK"), WR("."),
-        L("DOTS2"), WR("next"), LR("DOTS1"),
-            WR('."|'), ' <sp',
-            WR("EXIT")]
-        )
+        # ColonWord(".S",
+        #     [WR("CR"), WR("DEPTH"),
+        #     WR(">R"),
+        #     WR("branch"), LR("DOTS2"),
+        # L("DOTS1"), WR("R@"), WR("PICK"), WR("."),
+        # L("DOTS2"), WR("next"), LR("DOTS1"),
+        #     WR('."|'), ' <sp',
+        #     WR("EXIT")]
+        # )
         # ColonWord("!CSP",
         #     []#TODO
         # )
@@ -1118,9 +1118,11 @@ def by_the_book_memory_initialization(start_of_data_stack_address,
     """ Initialize memory with default user variable values.
     """
     def initializer(compiler):
+        print("initializer")
         last_name_address = compiler.name_address + 4*compiler.cell_size#8
         top_of_name_dictionary = compiler.name_address + 2*compiler.cell_size#4
         top_of_code_dictionary = compiler.code_address
+        print(f"top_of_code_dictionary={top_of_code_dictionary}")
         init_values = ([ 0,0,0,0,
             start_of_data_stack_address,
             start_of_return_stack_address,
@@ -1149,8 +1151,14 @@ def by_the_book_memory_initialization(start_of_data_stack_address,
             top_of_name_dictionary,
             last_name_address
         ])
+        print(len(init_values))
+        print(len(range(cold_boot_address, cold_boot_address+compiler.cell_size*len(init_values), compiler.cell_size)))
+        print(list(range(cold_boot_address, cold_boot_address+compiler.cell_size*len(init_values), compiler.cell_size)))
+        print(init_values)
 
         for address, value in zip(range(cold_boot_address, cold_boot_address+compiler.cell_size*len(init_values), compiler.cell_size), init_values):
+            if address == 0x7E42:
+                breakpoint()
             compiler.write_cell_at_address(address, value)
 
     return initializer

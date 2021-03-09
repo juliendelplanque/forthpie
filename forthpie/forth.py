@@ -17,6 +17,8 @@ class Memory(object):
         return self.bytes_array[index]
 
     def __setitem__(self, index, value):
+        # if index == 0x7E42 or index == 0x7E43:
+        #     breakpoint()
         if value < 0 or value > 255:
             raise NotAByte(value)
         self.bytes_array[index] = value
@@ -54,6 +56,8 @@ class ForthInterpreter(MemoryManipulator):
         self,
         cell_size,
         primitives,
+        data_stack_pointer=0,
+        return_stack_pointer=0,
         memory_size=0,
         input_stream=None,
         output_stream=None,
@@ -62,8 +66,10 @@ class ForthInterpreter(MemoryManipulator):
     ):
         self.cell_size = cell_size
         self.interpreter_pointer = 0
-        self.data_stack_pointer = 0
-        self.return_stack_pointer = 0
+        self.initial_data_stack_pointer = data_stack_pointer
+        self.data_stack_pointer = self.initial_data_stack_pointer
+        self.initial_return_stack_pointer = return_stack_pointer
+        self.return_stack_pointer = self.initial_return_stack_pointer
         self.word_pointer = 0
         self.memory = Memory(memory_size)
         self.primitives = primitives
@@ -221,6 +227,23 @@ class ForthInterpreter(MemoryManipulator):
         for i in range(self.cell_size):
             cell = (cell << 8) | 0xFF
         return cell
+
+    def print_data_stack(self):
+        print("Data stack:")
+        for address in range(self.data_stack_pointer, self.initial_data_stack_pointer, self.cell_size):
+            print("\t", self.read_cell_at_address(address))
+        print("\t^ TOP")
+
+    def print_return_stack(self):
+        print("Return stack:")
+        for address in range(self.initial_return_stack_pointer, self.return_stack_pointer-self.cell_size, -self.cell_size):
+            address_on_stack = self.read_cell_at_address(address)
+            try:
+                word_name = self.compiler_metadata.word_address_belongs_to(address_on_stack).name
+            except StopIteration:
+                word_name = "(?)"
+            print(f"\t{address_on_stack} ({word_name})")
+        print("\t^ TOP")
 
 class ExecutionStatistics(object):
     def __init__(self):

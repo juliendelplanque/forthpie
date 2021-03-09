@@ -1,14 +1,18 @@
-from .forth import Memory
-from .compiler import ImageCompiler
-from .model import *
-from .eforth.images.by_the_book import by_the_book_eforth_image
-from .eforth.primitives.by_the_book import primitives_store
-from .eforth.compiler.by_the_book import Compiler
+import sys
+import logging
+
+from ..forth import Memory, ForthInterpreter, StatisticsInterpreter
+from ..compiler import ImageCompiler
+from ..model import WR
+from .images.by_the_book import by_the_book_eforth_image
+from .primitives.by_the_book import primitives_store
+from .compiler.by_the_book import Compiler
 
 CELL_SIZE = 2
 VOCSS = 8
 
-EM = 0x4000
+#EM = 0x4000
+EM = 0x8000 # More memory for the heap!
 COLDD = 0x100
 US = 64*CELL_SIZE # user area size in cells
 RTS = 64*CELL_SIZE # return stack/TIB size
@@ -49,9 +53,6 @@ def bootstrap_16bits_eforth():
     return compiler
 
 def run():
-    import sys
-    from .forth import ForthInterpreter, StatisticsInterpreter
-    import logging
     # print(f"CELL_SIZE = {hex(CELL_SIZE)}")
     # print(f"VOCSS = {hex(VOCSS)}")
     # print(f"EM = {hex(EM)}")
@@ -73,13 +74,13 @@ def run():
     interpreter = interpreter_class(
                     cell_size=compiler.cell_size,
                     primitives=primitives_store,
+                    data_stack_pointer=SPP,
+                    return_stack_pointer=RPP,
                     input_stream=sys.stdin,
                     output_stream=sys.stdout,
                     logger=logging,
                     compiler_metadata=compiler.compiler_metadata
                 )
-    interpreter.data_stack_pointer = SPP
-    interpreter.return_stack_pointer = RPP
     interpreter.interpreter_pointer = compiler.code_address
     compiler.compile_word_body([WR("COLD")])
     interpreter.memory = compiler.memory
@@ -87,27 +88,16 @@ def run():
         interpreter.start()
         print(interpreter.execution_statistics.word_names_to_count(compiler.compiler_metadata))
     finally:
-        print("Data stack:")
-        for address in range(SPP, interpreter.data_stack_pointer, -compiler.cell_size):
-            print("\t", interpreter.read_cell_at_address(address))
-        print("\t^ TOP")
+        interpreter.print_data_stack()
 
-        print("Return stack:")
-        for address in range(RPP, interpreter.return_stack_pointer-compiler.cell_size, -compiler.cell_size):
-            address_on_stack = interpreter.read_cell_at_address(address)
-            try:
-                word_name = interpreter.compiler_metadata.word_address_belongs_to(address_on_stack).name
-            except StopIteration:
-                word_name = "(?)"
-            print(f"\t{address_on_stack} ({word_name})")
-        print("\t^ TOP")
+        interpreter.print_return_stack()
 
         print("User variables:")
         for address in range(UPP, UPP+compiler.user_address, compiler.cell_size):
             print(f"\t{hex(address)}: ", hex(interpreter.read_cell_at_address(address)))
 
         print("TIB[0:10]:")
-        for address in range(TIBB, TIBB+10*compiler.cell_size, compiler.cell_size):
+        for address in range(TIBB, TIBB+10):
             print(f"\t{hex(interpreter.memory[address])} ({chr(interpreter.memory[address])})")
 
 if __name__ == "__main__":

@@ -13,7 +13,12 @@ class Compiler(AbstractCompiler):
         self.user_address = initial_user_address
         self.memory = memory
         self.primitives_provider = primitives_provider
-        self.compiler_metadata = CompilerMetadata()
+        self._compiler_metadata = CompilerMetadata(initial_user_address)
+
+    @property
+    def compiler_metadata(self):
+        self._compiler_metadata.user_address = self.user_address
+        return self._compiler_metadata
 
     def get_primitive_by_name(self, name):
         return self.primitives_provider.get_primitive_by_name(name)

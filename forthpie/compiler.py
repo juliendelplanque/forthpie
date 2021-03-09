@@ -15,8 +15,10 @@ class WordMetaData(object):
         return self.start_address <= address and address <= self.end_address
 
 class CompilerMetadata(object):
-    def __init__(self):
+    def __init__(self, start_of_user_area):
         self.words_metadata = []
+        self.start_of_user_area = start_of_user_area
+        self.user_address = self.start_of_user_area
 
     def add_word_meta(self, word_meta):
         self.words_metadata.append(word_meta)
