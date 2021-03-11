@@ -14,13 +14,9 @@ class Memory(object):
         return len(self.bytes_array)
 
     def __getitem__(self, index):
-        # if index == 0x7E42 or index == 0x7E43:
-        #     breakpoint()
         return self.bytes_array[index]
 
     def __setitem__(self, index, value):
-        # if index == 0x7E42 or index == 0x7E43:
-        #     breakpoint()
         if value < 0 or value > 255:
             raise NotAByte(value)
         self.bytes_array[index] = value
