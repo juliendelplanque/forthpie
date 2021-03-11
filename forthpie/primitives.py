@@ -12,8 +12,14 @@ class primitive(object):
         return self.function(vm)
 
 class debug(primitive):
-    def __init__(self, primitive):
+    def __init__(self, input_count=0, output_count=0):
+        self.input_count = input_count
+        self.output_count = output_count
+        self.primitive = None
+
+    def __call__(self, primitive):
         self.primitive = primitive
+        return self
 
     @property
     def code(self):
@@ -28,8 +34,11 @@ class debug(primitive):
         return self.primitive.function
 
     def execute(self, vm):
-        print(f"DEBUG: {self.primitive.name}")
-        return self.primitive.execute(vm)
+        print(f"DEBUG PRIMITIVE: {self.primitive.name}")
+        print(f"Input=(top){vm.tops_of_data_stack(self.input_count)}(bottom)")
+        result = self.primitive.execute(vm)
+        print(f"Output=(top){vm.tops_of_data_stack(self.output_count)}(bottom)")
+        return result
 
 class NoPrimitiveFound(Exception):
     def __init__(self, primitive_code_or_name):

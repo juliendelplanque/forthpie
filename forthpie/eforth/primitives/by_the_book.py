@@ -1,4 +1,5 @@
 from ...primitives import primitive, PrimitiveStore
+from ...primitives import debug
 
 ## System interface
 @primitive(0, "BYE")

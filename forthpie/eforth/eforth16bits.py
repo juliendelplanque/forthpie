@@ -11,8 +11,7 @@ from .compiler.by_the_book import Compiler
 CELL_SIZE = 2
 VOCSS = 8
 
-#EM = 0x4000
-EM = 0x8000 # More memory for the heap!
+EM = 0x4000
 COLDD = 0x100
 US = 64*CELL_SIZE # user area size in cells
 RTS = 64*CELL_SIZE # return stack/TIB size
@@ -29,7 +28,8 @@ def bootstrap_16bits_eforth():
         initial_code_address=CODEE,
         initial_name_address=NAMEE,
         initial_user_address=4*CELL_SIZE,
-        memory=Memory(EM),
+        # memory=Memory(EM),
+        memory=Memory(0x8000), #More memory for the heap!
         primitives_provider=primitives_store)
 
     image = by_the_book_eforth_image(

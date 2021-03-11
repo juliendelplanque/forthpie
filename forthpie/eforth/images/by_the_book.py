@@ -1100,7 +1100,7 @@ def by_the_book_hardware_reset_words(version_number, init_values_size, cell_size
         ),
         ColonWord("COLD",
         [L("COLD1"), WR("doLIT"), cold_boot_address, WR("doLIT"), start_of_user_area_address,
-            WR("doLIT"), (init_values_size+1)*cell_size, WR("CMOVE"),
+            WR("doLIT"), init_values_size*cell_size, WR("CMOVE"),
             WR("PRESET"),
             WR("'BOOT"), WR("@EXECUTE"),
             WR("FORTH"), WR("CONTEXT"), WR("@"), WR("DUP"),
@@ -1118,47 +1118,37 @@ def by_the_book_memory_initialization(start_of_data_stack_address,
     """ Initialize memory with default user variable values.
     """
     def initializer(compiler):
-        print("initializer")
-        last_name_address = compiler.name_address + 4*compiler.cell_size#8
-        top_of_name_dictionary = compiler.name_address + 2*compiler.cell_size#4
+        last_name_address = compiler.name_address + 2*compiler.cell_size
+        top_of_name_dictionary = compiler.name_address
         top_of_code_dictionary = compiler.code_address
-        print(f"top_of_code_dictionary={top_of_code_dictionary}")
         init_values = ([ 0,0,0,0,
-            start_of_data_stack_address,
-            start_of_return_stack_address,
-            compiler.lookup_word(WR("?RX")),
-            compiler.lookup_word(WR("TX!")),
-            compiler.lookup_word(WR("accept")),
-            compiler.lookup_word(WR("kTAP")),
+            start_of_data_stack_address, # SP0
+            start_of_return_stack_address, # RP0
+            compiler.lookup_word(WR("?RX")), # '?KEY
+            compiler.lookup_word(WR("TX!")), # 'EMIT
+            compiler.lookup_word(WR("accept")), # 'EXPECT
+            compiler.lookup_word(WR("kTAP")), # 'TAP
             compiler.lookup_word(WR("TX!")), # 'ECHO
-            compiler.lookup_word(WR(".OK")),
-            10, # Default radix
+            compiler.lookup_word(WR(".OK")), # 'PROMPT
+            10, # BASE
             0, # tmp
             0, # SPAN
             0, # >IN
-            0, # #TIB
-            terminal_input_buffer_address,
-            0,
-            compiler.lookup_word(WR("$INTERPRET")),
-            compiler.lookup_word(WR("NUMBER?")),
-            0,
-            0,
-            0] +
-            (number_of_vocabularies * [0]) +
-            [0,
-            0,
-            top_of_code_dictionary,
-            top_of_name_dictionary,
-            last_name_address
+            terminal_input_buffer_address, 0, # TIB
+            0, # CSP
+            compiler.lookup_word(WR("$INTERPRET")), # 'EVAL
+            compiler.lookup_word(WR("NUMBER?")), # 'NUMBER
+            0, # HLD
+            0 # HANDLER
+            ] +
+            (number_of_vocabularies * [0]) + # CONTEXT
+            [0, 0, # CURRENT
+            top_of_code_dictionary, # CP
+            top_of_name_dictionary, # NP
+            last_name_address # LAST
         ])
-        print(len(init_values))
-        print(len(range(cold_boot_address, cold_boot_address+compiler.cell_size*len(init_values), compiler.cell_size)))
-        print(list(range(cold_boot_address, cold_boot_address+compiler.cell_size*len(init_values), compiler.cell_size)))
-        print(init_values)
 
         for address, value in zip(range(cold_boot_address, cold_boot_address+compiler.cell_size*len(init_values), compiler.cell_size), init_values):
-            if address == 0x7E42:
-                breakpoint()
             compiler.write_cell_at_address(address, value)
 
     return initializer

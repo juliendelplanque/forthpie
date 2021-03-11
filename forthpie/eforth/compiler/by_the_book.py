@@ -109,7 +109,6 @@ class Compiler(AbstractCompiler):
         """Compile a colon definition header.
         """
         self.compile_name_header(compile_only, immediate, name)
-        # print(f"{name}: xt={self.code_address}")
         self.compiler_metadata.add_word_meta(WordMetaData(name, self.code_address))
         self.write_cell_at_address(self.code_address, self.get_primitive_by_name(primitive_name).code)
         self.code_address += self.cell_size
@@ -135,8 +134,7 @@ class Compiler(AbstractCompiler):
 
     def compile_user(self, name, compile_only=False, immediate=False, cells=1):
         self.compile_user_header(compile_only, immediate, name)
-        for _ in range(cells-1):
-            self.user_address += self.cell_size
+        self.user_address += (cells-1)*self.cell_size
         self.compiler_metadata.last().end_address = self.code_address-self.cell_size
 
     def align_address(self, address):
