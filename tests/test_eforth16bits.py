@@ -378,7 +378,7 @@ import forthpie.eforth.eforth16bits as eforth16bits
 )
 def test_WORD(to_compile, expected_data_stack):
     compiler = eforth16bits.bootstrap_16bits_eforth()
-    interpreter = ForthInterpreter(compiler.cell_size, primitives_store, logger=logging)
+    interpreter = ForthInterpreter(compiler.cell_size, primitives_store(), logger=logging)
     interpreter.data_stack_pointer = eforth16bits.SPP
     interpreter.return_stack_pointer = eforth16bits.RPP
 

@@ -356,7 +356,8 @@ def DEBUG(vm):
     breakpoint()
     vm.next()
 
-primitives_store = PrimitiveStore(
+def primitives_store():
+    return PrimitiveStore(
     bye,
     imrx,
     txem,

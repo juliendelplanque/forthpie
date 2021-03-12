@@ -96,7 +96,10 @@ class ForthInterpreter(MemoryManipulator):
     def step(self, address):
         primitive = self.get_primitive_by_address(address)
         self.log_debug(
-            f"primitive[{primitive.code}][{primitive.name}] - fct={primitive.function.__name__}"
+            "primitive[%s][%s] - fct=%s",
+            primitive.code,
+            primitive.name,
+            primitive.function.__name__
         )
         primitive.execute(self)
 
@@ -172,12 +175,12 @@ class ForthInterpreter(MemoryManipulator):
         return self.tops_of_data_stack(1)[0]
 
     def push_on_data_stack(self, cell_value):
-        self.log_debug(f"push_on_data_stack({cell_value})")
+        self.log_debug("push_on_data_stack(%s)", cell_value)
         self.allocate_data_stack()
         self.write_cell_at_address(self.data_stack_pointer, cell_value)
 
     def pop_from_data_stack(self):
-        self.log_debug(f"pop_from_data_stack() -> {self.top_of_data_stack()}")
+        self.log_debug("pop_from_data_stack() -> %s", self.top_of_data_stack())
         cell = self.read_cell_at_address(self.data_stack_pointer)
         self.deallocate_data_stack()
         return cell
@@ -197,13 +200,13 @@ class ForthInterpreter(MemoryManipulator):
         self.return_stack_pointer += self.cell_size
 
     def pop_from_return_stack(self):
-        self.log_debug(f"pop_from_return_stack() -> {self.top_of_return_stack()}")
+        self.log_debug("pop_from_return_stack() -> %s", self.top_of_return_stack())
         cell = self.read_cell_at_address(self.return_stack_pointer)
         self.deallocate_return_stack()
         return cell
 
     def push_on_return_stack(self, cell_value):
-        self.log_debug(f"push_on_return_stack({cell_value})")
+        self.log_debug("push_on_return_stack(%s)", cell_value)
         self.allocate_return_stack()
         self.write_cell_at_address(self.return_stack_pointer, cell_value)
 
@@ -263,6 +266,20 @@ class ExecutionStatistics(object):
                 name = '?'
             names_to_count[name] = calls_count
         return names_to_count
+
+class OptimizedInterpreter(ForthInterpreter):
+    def start(self):
+        """Start interpreting Forth image.
+        """
+        self.keep_going = True
+        __read_cell_at_address = self.read_cell_at_address
+        __step = self.step
+        __get_primitive_by_address = self.get_primitive_by_address
+        while self.keep_going:
+            self.keep_going = False
+            self.word_pointer = __read_cell_at_address(self.interpreter_pointer)
+            self.interpreter_pointer += self.cell_size
+            __get_primitive_by_address(__read_cell_at_address(self.word_pointer)).execute(self)
 
 class StatisticsInterpreter(ForthInterpreter):
     def __init__(self, *args, **kwargs):

@@ -1,11 +1,11 @@
 import sys
 import logging
 
-from ..forth import Memory, ForthInterpreter, StatisticsInterpreter
+from ..forth import Memory, ForthInterpreter, StatisticsInterpreter, OptimizedInterpreter
 from ..compiler import ImageCompiler
 from ..model import WR
 from .images.by_the_book import by_the_book_eforth_image
-from .primitives.by_the_book import primitives_store
+from .primitives.by_the_book import primitives_store as by_the_book_primitives_store
 from .compiler.by_the_book import Compiler
 
 CELL_SIZE = 2
@@ -21,6 +21,8 @@ SPP = TIBB-8*CELL_SIZE # 0x3E7F # start of data stack (SP0)
 UPP = EM-256*CELL_SIZE # 0x3F80 # start of user area (UP0)
 NAMEE = UPP-8*CELL_SIZE # 0x3BFF # name dictionary
 CODEE = COLDD+US # 0x180 # code dictionary
+
+primitives_store = by_the_book_primitives_store()
 
 def bootstrap_16bits_eforth():
     compiler = Compiler(
@@ -70,7 +72,8 @@ def run():
 
     compiler = bootstrap_16bits_eforth()
     # interpreter_class = ForthInterpreter
-    interpreter_class = StatisticsInterpreter
+    # interpreter_class = StatisticsInterpreter
+    interpreter_class = OptimizedInterpreter
     interpreter = interpreter_class(
                     cell_size=compiler.cell_size,
                     primitives=primitives_store,
