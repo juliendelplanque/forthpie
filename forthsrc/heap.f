@@ -70,7 +70,12 @@ VARIABLE 'allocate
 VARIABLE 'free
 VARIABLE 'resize
 
-' bump_allocate 'allocate !
+: 'allocate!
+    'allocate !
+;
+
+' bump_allocate 'allocate!
+
 ' bump_free 'free !
 ' bump_resize 'resize !
 

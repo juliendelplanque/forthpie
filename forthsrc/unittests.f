@@ -24,7 +24,7 @@
     0 assert-not-equals
 ;
 
-: sould_not_raise
+: should_not_raise
     CATCH
     0 assert-equals
 ;
@@ -57,7 +57,9 @@
     true
 ;
 
-: print_test_name
+VARIABLE 'test_name_printer
+
+: default_test_name_printer
     ( na - )
     \ Prints the name of the test to run.
     DUP
@@ -65,6 +67,28 @@
     SWAP 1 + \ name-length str-addr
     SWAP
     TYPE
+;
+
+' default_test_name_printer 'test_name_printer !
+
+: print_test_name
+    'test_name_printer @EXECUTE
+;
+
+VARIABLE 'test_result_printer
+
+: default_test_result_printer ( f - )
+    0 = IF
+        ." Passed"
+    ELSE
+        ." Failed"
+    THEN
+;
+
+' default_test_result_printer 'test_result_printer !
+
+: print_test_result
+    'test_result_printer @EXECUTE
 ;
 
 : run_tests ( - )
@@ -77,11 +101,7 @@
         CR DUP print_test_name SPACE
         \ Get execution token of test.
         DUP NAME> \ na ca
-        CATCH
-        0 =
-        IF ." Passed"
-        ELSE
-            ." Failed"
-        THEN
+        CATCH \ na exception_occured?
+        print_test_result \ na
     REPEAT
 ;
