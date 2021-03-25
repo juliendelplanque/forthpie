@@ -21,6 +21,17 @@ class Memory(object):
             raise NotAByte(value)
         self.bytes_array[index] = value
 
+    def save(self, file_path):
+        with open(file_path, "wb") as file:
+            file.write(bytearray(self.bytes_array))
+
+    @classmethod
+    def from_file(cls, file_path):
+        memory = cls(0)
+        with open(file_path, "rb") as file:
+            memory.bytes_array = list(bytearray(file.read()))
+        return memory
+
 class MemoryManipulator(object):
     def __init__(self, cell_size):
         self.cell_size = cell_size
@@ -280,6 +291,24 @@ class OptimizedInterpreter(ForthInterpreter):
             self.word_pointer = __read_cell_at_address(self.interpreter_pointer)
             self.interpreter_pointer += self.cell_size
             __get_primitive_by_address(__read_cell_at_address(self.word_pointer)).execute(self)
+
+    def push_on_data_stack(self, cell_value):
+        self.data_stack_pointer -= self.cell_size
+        self.write_cell_at_address(self.data_stack_pointer, cell_value)
+
+    def pop_from_data_stack(self):
+        cell = self.read_cell_at_address(self.data_stack_pointer)
+        self.data_stack_pointer += self.cell_size
+        return cell
+
+    def pop_from_return_stack(self):
+        cell = self.read_cell_at_address(self.return_stack_pointer)
+        self.return_stack_pointer += self.cell_size
+        return cell
+
+    def push_on_return_stack(self, cell_value):
+        self.return_stack_pointer -= self.cell_size
+        self.write_cell_at_address(self.return_stack_pointer, cell_value)
 
 class StatisticsInterpreter(ForthInterpreter):
     def __init__(self, *args, **kwargs):
