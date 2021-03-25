@@ -1,7 +1,8 @@
 import sys
 import logging
 
-from ..forth import Memory, ForthInterpreter, StatisticsInterpreter, OptimizedInterpreter
+from ..forth import Memory
+from .. import forth as interpreters
 from ..compiler import ImageCompiler
 from ..model import WR
 from .images.by_the_book import by_the_book_eforth_image
@@ -54,7 +55,38 @@ def bootstrap_16bits_eforth():
 
     return compiler
 
-def run():
+def run(interpreter_class, memory, cell_size, compiler_metadata=None, log_level=logging.WARNING):
+    logging.root.setLevel(log_level)
+    interpreter = interpreter_class(
+                    cell_size=cell_size,
+                    primitives=primitives_store,
+                    data_stack_pointer=SPP,
+                    return_stack_pointer=RPP,
+                    input_stream=sys.stdin,
+                    output_stream=sys.stdout,
+                    logger=logging,
+                    compiler_metadata=compiler_metadata
+                )
+    interpreter.memory = memory
+    interpreter.interpreter_pointer = COLDD
+
+    try:
+        interpreter.start()
+        # print(interpreter.execution_statistics.word_names_to_count(compiler.compiler_metadata))
+    finally:
+        interpreter.print_data_stack()
+
+        interpreter.print_return_stack()
+
+        # print("User variables:")
+        # for address in range(UPP, UPP+compiler.user_address, compiler.cell_size):
+        #     print(f"\t{hex(address)}: ", hex(interpreter.read_cell_at_address(address)))
+
+        # print("TIB[0:10]:")
+        # for address in range(TIBB, TIBB+10):
+        #     print(f"\t{hex(interpreter.memory[address])} ({chr(interpreter.memory[address])})")
+
+def boostrap_run(interpreter_class, log_level=logging.WARNING):
     # print(f"CELL_SIZE = {hex(CELL_SIZE)}")
     # print(f"VOCSS = {hex(VOCSS)}")
     # print(f"EM = {hex(EM)}")
@@ -67,41 +99,45 @@ def run():
     # print(f"UPP = {hex(UPP)}")
     # print(f"NAMEE = {hex(NAMEE)}")
     # print(f"CODEE = {hex(CODEE)}")
-    logging.basicConfig()
-    logging.root.setLevel(logging.WARNING)
+    logging.root.setLevel(log_level)
 
     compiler = bootstrap_16bits_eforth()
-    # interpreter_class = ForthInterpreter
-    # interpreter_class = StatisticsInterpreter
-    interpreter_class = OptimizedInterpreter
-    interpreter = interpreter_class(
-                    cell_size=compiler.cell_size,
-                    primitives=primitives_store,
-                    data_stack_pointer=SPP,
-                    return_stack_pointer=RPP,
-                    input_stream=sys.stdin,
-                    output_stream=sys.stdout,
-                    logger=logging,
-                    compiler_metadata=compiler.compiler_metadata
-                )
-    interpreter.interpreter_pointer = compiler.code_address
-    compiler.compile_word_body([WR("COLD")])
-    interpreter.memory = compiler.memory
-    try:
-        interpreter.start()
-        print(interpreter.execution_statistics.word_names_to_count(compiler.compiler_metadata))
-    finally:
-        interpreter.print_data_stack()
-
-        interpreter.print_return_stack()
-
-        print("User variables:")
-        for address in range(UPP, UPP+compiler.user_address, compiler.cell_size):
-            print(f"\t{hex(address)}: ", hex(interpreter.read_cell_at_address(address)))
-
-        print("TIB[0:10]:")
-        for address in range(TIBB, TIBB+10):
-            print(f"\t{hex(interpreter.memory[address])} ({chr(interpreter.memory[address])})")
+    run(
+        interpreter_class,
+        compiler.memory,
+        cell_size=compiler.cell_size,
+        compiler_metadata=compiler.compiler_metadata
+    )
 
 if __name__ == "__main__":
-    run()
+    from docopt import docopt
+    arguments = docopt(
+"""EForth with 16bits cell-size.
+
+Usage:
+  eforth16bits.py run [--log=<level>] [--interpreter=<name>] <file_path>
+  eforth16bits.py bootstrap-run [--log=<level>] [--interpreter=<name>]
+  eforth16bits.py bootstrap <file_path>
+
+Options:
+  --log=<level>         Log level for the VM [default: WARNING].
+  --interpreter=<name>  Specify which interpreter to use [default: OptimizedInterpreter].
+
+""")
+    logging.basicConfig()
+    if arguments["run"]:
+        memory = Memory.from_file(arguments["<file_path>"])
+        run(
+            getattr(interpreters, arguments["--interpreter"]),
+            memory,
+            cell_size=2,
+            log_level=getattr(logging, arguments["--log"].upper())
+        )
+    elif arguments["bootstrap-run"]:
+        boostrap_run(
+            getattr(interpreters, arguments["--interpreter"]),
+            log_level=getattr(logging, arguments["--log"].upper())
+        )
+    elif arguments["bootstrap"]:
+        compiler = bootstrap_16bits_eforth()
+        compiler.memory.save(arguments["<file_path>"])
