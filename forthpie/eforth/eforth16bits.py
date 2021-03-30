@@ -68,15 +68,22 @@ def run(interpreter_class, memory, cell_size, compiler_metadata=None, log_level=
                     compiler_metadata=compiler_metadata
                 )
     interpreter.memory = memory
-    interpreter.interpreter_pointer = COLDD
+    interpreter.interpreter_pointer = interpreter.read_cell_at_address(COLDD)
+    # print(interpreter.read_cell_at_address(COLDD))
+    if interpreter.read_cell_at_address(COLDD+2*cell_size) != 0:
+        interpreter.data_stack_pointer = interpreter.read_cell_at_address(COLDD+2*cell_size)
+    # print(interpreter.data_stack_pointer)
+    if interpreter.read_cell_at_address(COLDD+3*cell_size) != 0:
+        interpreter.return_stack_pointer = interpreter.read_cell_at_address(COLDD+3*cell_size)
+    # print(interpreter.return_stack_pointer)
 
-    try:
-        interpreter.start()
+    # try:
+    interpreter.start()
         # print(interpreter.execution_statistics.word_names_to_count(compiler.compiler_metadata))
-    finally:
-        interpreter.print_data_stack()
+    # finally:
+    #     interpreter.print_data_stack()
 
-        interpreter.print_return_stack()
+    #     interpreter.print_return_stack()
 
         # print("User variables:")
         # for address in range(UPP, UPP+compiler.user_address, compiler.cell_size):

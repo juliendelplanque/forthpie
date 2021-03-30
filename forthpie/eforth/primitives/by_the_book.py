@@ -356,6 +356,39 @@ def DEBUG(vm):
     breakpoint()
     vm.next()
 
+@primitive(33, "SNAPSHOT")
+def SNAPSHOT(vm):
+    """Make a snapshot of the current state of the memory and save it in a binary file.
+
+    ( addr u-count should-quit? - )
+    """
+    print("hey")
+    should_quit = vm.pop_from_data_stack()
+    string_length = vm.pop_from_data_stack()
+    string_address = vm.pop_from_data_stack()
+    file_path = bytes(vm.memory[string_address:string_address+string_length]).decode("ascii")
+    print(file_path)
+
+    COLDD = 0x100  # cold boot data address... TODO: should not be hardcoded here
+    vm.write_cell_at_address(
+        COLDD,
+        vm.interpreter_pointer
+    )
+    vm.write_cell_at_address(
+        COLDD+2*vm.cell_size,
+        vm.data_stack_pointer
+    )
+    vm.write_cell_at_address(
+        COLDD+3*vm.cell_size,
+        vm.return_stack_pointer
+    )
+    vm.memory.save(file_path)
+
+    if should_quit:
+        bye.execute(vm)
+    else:
+        vm.next()
+
 def primitives_store():
     return PrimitiveStore(
     bye,
@@ -390,5 +423,6 @@ def primitives_store():
     XOR,
     UMplus,
     UMMOD,
-    DEBUG
+    DEBUG,
+    SNAPSHOT
 )

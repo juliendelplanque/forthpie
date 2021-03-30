@@ -38,6 +38,7 @@ def by_the_book_primitives():
         Primitive("UM+"),
         Primitive("UM/MOD"),
         # Primitive("DEBUG"),
+        Primitive("SNAPSHOT")
     )
 
 def by_the_book_system_and_user_variables(start_of_user_area_address, number_of_vocabularies):
@@ -1121,7 +1122,11 @@ def by_the_book_memory_initialization(start_of_data_stack_address,
         last_name_address = compiler.name_address + 2*compiler.cell_size
         top_of_name_dictionary = compiler.name_address
         top_of_code_dictionary = compiler.code_address
-        init_values = ([ 0,0,0,0,
+        init_values = ([
+            cold_boot_address + compiler.cell_size, # *IP
+            compiler.lookup_word(WR("COLD")), # cold boot IP
+            0, # SP for restoring from snapshot
+            0, # RP for restoring from snapshot
             start_of_data_stack_address, # SP0
             start_of_return_stack_address, # RP0
             compiler.lookup_word(WR("?RX")), # '?KEY
