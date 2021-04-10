@@ -5,7 +5,8 @@ from ..forth import Memory
 from .. import forth as interpreters
 from ..compiler import ImageCompiler
 from ..model import WR
-from .images.by_the_book import by_the_book_eforth_image
+# from .images.by_the_book import by_the_book_eforth_image as image_builder
+from .images.forthpie import forthpie_eforth_image as image_builder
 from .primitives.by_the_book import primitives_store as by_the_book_primitives_store
 from .compiler.by_the_book import Compiler
 
@@ -35,7 +36,7 @@ def bootstrap_16bits_eforth():
         memory=Memory(0x8000), #More memory for the heap!
         primitives_provider=primitives_store)
 
-    image = by_the_book_eforth_image(
+    image = image_builder(
         start_of_data_stack_address=SPP,
         start_of_return_stack_address=RPP,
         start_of_user_area_address=UPP,

@@ -1,6 +1,6 @@
 from ...model import Image, WordsSet, Primitive, ColonWord, UserVariable, WR, code, L, LR, Byte, Align
 
-def by_the_book_primitives():
+def forthpie_primitives():
     """ Builds and returns a WordsSet that contains EForth primitives as
     described in the book.
     """
@@ -36,10 +36,12 @@ def by_the_book_primitives():
         Primitive("OR"),
         Primitive("XOR"),
         Primitive("UM+"),
-        Primitive("UM/MOD")
+        Primitive("UM/MOD"),
+        # Primitive("DEBUG"),
+        Primitive("SNAPSHOT")
     )
 
-def by_the_book_system_and_user_variables(start_of_user_area_address, number_of_vocabularies):
+def forthpie_system_and_user_variables(start_of_user_area_address, number_of_vocabularies):
     """ Builds and returns a WordsSet that contains EForth words allowing to
     define system and user variables as well as the variables required by
     EForth to run as described in the book.
@@ -88,7 +90,17 @@ def by_the_book_system_and_user_variables(start_of_user_area_address, number_of_
         requirements=["primitives"]
     )
 
-def by_the_book_common_words():
+def forthpie_booleans():
+    return WordsSet("booleans",
+        ColonWord("TRUE",
+            [WR("doLIT"), -1, WR("EXIT")]
+        ),
+        ColonWord("FALSE",
+            [WR("doLIT"), 0, WR("EXIT")]
+        )
+    )
+
+def forthpie_common_words():
     """
     """
     return WordsSet("common",
@@ -109,7 +121,7 @@ def by_the_book_common_words():
         ),
         # + is defined in compile_system_and_user_variables() because doUser requires it
         ColonWord("NOT",
-            [WR("doLIT"), -1, WR("XOR"), WR("EXIT")
+            [WR("TRUE"), WR("XOR"), WR("EXIT")
         ]),
         ColonWord("NEGATE",
             [WR("NOT"), WR("doLIT"), 1, WR("+"), WR("EXIT")]
@@ -131,13 +143,13 @@ def by_the_book_common_words():
         requirements=["primitives"]
     )
 
-def by_the_book_comparison_words():
+def forthpie_comparison_words():
     return WordsSet("comparison",
         ColonWord("=",
             [WR("XOR"),
             WR("?branch"), LR("=1"),
-            WR("doLIT"), 0, WR("EXIT"),
-        L("=1"), WR("doLIT"), -1, WR("EXIT")]
+            WR("FALSE"), WR("EXIT"),
+        L("=1"), WR("TRUE"), WR("EXIT")]
         ),
         ColonWord("U<",
             [WR("2DUP"), WR("XOR"), WR("0<"),
@@ -169,7 +181,7 @@ def by_the_book_comparison_words():
         requirements=["primitives"]
     )
 
-def by_the_book_divide_words():
+def forthpie_divide_words():
     """
     """
     return WordsSet("divide",
@@ -219,7 +231,7 @@ def by_the_book_divide_words():
         requirements=["primitives", "common", "comparison"]
     )
 
-def by_the_book_multiply_words():
+def forthpie_multiply_words():
     """
     """
     return WordsSet("multiply",
@@ -252,7 +264,7 @@ def by_the_book_multiply_words():
         requirements=["primitives", "common", "comparison"]
     )
 
-def by_the_book_memory_alignment_words(cell_size):
+def forthpie_memory_alignment_words(cell_size):
     """
     """
     return WordsSet("memory_alignment",
@@ -292,7 +304,7 @@ def by_the_book_memory_alignment_words(cell_size):
         )
     )
 
-def by_the_book_memory_access_words(cell_size):
+def forthpie_memory_access_words(cell_size):
     """
     """
     return WordsSet("memory_access",
@@ -364,7 +376,7 @@ def by_the_book_memory_access_words(cell_size):
         )
     )
 
-def by_the_book_numeric_output_single_precision_words():
+def forthpie_numeric_output_single_precision_words():
     return WordsSet("numeric_output_single_precision",
         ColonWord("DIGIT",
             [WR("doLIT"), 9, WR("OVER"), WR("<"),
@@ -414,7 +426,7 @@ def by_the_book_numeric_output_single_precision_words():
         )
     )
 
-def by_the_book_numeric_input_single_precision_words():
+def forthpie_numeric_input_single_precision_words():
     return WordsSet("numeric_input_single_precision",
         ColonWord("DIGIT?",
             [WR(">R"), WR("doLIT"), ord('0'), WR("-"),
@@ -451,7 +463,7 @@ def by_the_book_numeric_input_single_precision_words():
         )
     )
 
-def by_the_book_basic_io_words():
+def forthpie_basic_io_words():
     """
     """
     # TODO:probably needs host's line ending convention as input
@@ -535,7 +547,7 @@ def by_the_book_basic_io_words():
         )
     )
 
-def by_the_book_parsing_words():
+def forthpie_parsing_words():
     """
     """
     return WordsSet("parsing",
@@ -599,7 +611,7 @@ def by_the_book_parsing_words():
         )
     )
 
-def by_the_book_dictionary_search_words(lexicon_mask, cell_size):
+def forthpie_dictionary_search_words(lexicon_mask, cell_size):
     """
     """
     # NOTE: This words set highly relies on how words are encoded in memory
@@ -633,7 +645,7 @@ def by_the_book_dictionary_search_words(lexicon_mask, cell_size):
             WR("DUP"), WR("@"),
             WR("LEXICON_MASK"), WR("AND"), WR("R@"), WR("XOR"),
             WR("?branch"), LR("FIND2"),
-            WR("CELL+"), WR("doLIT"), -1,
+            WR("CELL+"), WR("TRUE"),
             WR("branch"), LR("FIND3"),
         L("FIND2"), WR("CELL+"), WR("tmp"), WR("@"), WR("SAME?"),
         L("FIND3"), WR("branch"), LR("FIND4"),
@@ -658,11 +670,11 @@ def by_the_book_dictionary_search_words(lexicon_mask, cell_size):
             WR("?branch"), LR("NAMQ2"),
             WR("R>"), WR("DROP"), WR("EXIT"),
         L("NAMQ3"), WR("R>"), WR("DROP"),
-            WR("doLIT"), 0, WR("EXIT")]
+            WR("FALSE"), WR("EXIT")]
         )
     )
 
-def by_the_book_terminal_response_words():
+def forthpie_terminal_response_words():
     """
     """
     # TODO:probably needs host's line ending convention as input
@@ -711,7 +723,7 @@ def by_the_book_terminal_response_words():
         )
     )
 
-def by_the_book_error_handling_words():
+def forthpie_error_handling_words():
     return WordsSet("error_handling",
         ColonWord("CATCH",
             [WR("SP@"), WR(">R"), WR("HANDLER"), WR("@"), WR(">R"),
@@ -742,7 +754,7 @@ def by_the_book_error_handling_words():
         )
     )
 
-def by_the_book_text_interpreter_words(compile_only_bit):
+def forthpie_text_interpreter_words(compile_only_bit):
     """
     """
     return WordsSet("text_interpreter",
@@ -781,7 +793,7 @@ def by_the_book_text_interpreter_words(compile_only_bit):
         )
     )
 
-def by_the_book_shell_words(terminal_input_buffer_address):
+def forthpie_shell_words(terminal_input_buffer_address):
     return WordsSet("shell_words",
         ColonWord("PRESET",
             [WR("SP0"), WR("@"), WR("SP!"),
@@ -826,7 +838,7 @@ def by_the_book_shell_words(terminal_input_buffer_address):
         )
     )
 
-def by_the_book_compiler_words():
+def forthpie_compiler_words():
     """
     """
     return WordsSet("compiler",
@@ -867,7 +879,7 @@ def by_the_book_compiler_words():
         )
     )
 
-def by_the_book_structure_words():
+def forthpie_structure_words():
     return WordsSet("structure",
         ColonWord("FOR",
             [WR("COMPILE"), WR(">R"), WR("HERE"), WR("EXIT")],
@@ -932,7 +944,7 @@ def by_the_book_structure_words():
         )
     )
 
-def by_the_book_name_compiler_words():
+def forthpie_name_compiler_words():
     return WordsSet("name_compiler",
         ColonWord("?UNIQUE",
             [WR("DUP"), WR("NAME?"),
@@ -956,7 +968,7 @@ def by_the_book_name_compiler_words():
         )
     )
 
-def by_the_book_forth_compiler_words(immediate_bit, doLISTCode):
+def forthpie_forth_compiler_words(immediate_bit, doLISTCode):
     return WordsSet("forth_compiler",
         ColonWord("$COMPILE",
             [WR("NAME?"), WR("?DUP"),
@@ -995,7 +1007,7 @@ def by_the_book_forth_compiler_words(immediate_bit, doLISTCode):
         )
     )
 
-def by_the_book_defining_words(doLISTCode):
+def forthpie_defining_words(doLISTCode):
     return WordsSet("defining",
         ColonWord("USER", # Implementation different from EFORTH.ASM !
             [WR("TOKEN"), WR("$,n"), WR("OVERT"),
@@ -1012,7 +1024,7 @@ def by_the_book_defining_words(doLISTCode):
         )
     )
 
-def by_the_book_tools_words():
+def forthpie_tools_words():
     """
     """
     return WordsSet("tools",
@@ -1077,7 +1089,7 @@ def by_the_book_tools_words():
         # )
     )
 
-def by_the_book_hardware_reset_words(version_number, init_values_size, cell_size, start_of_user_area_address, cold_boot_address):
+def forthpie_hardware_reset_words(version_number, init_values_size, cell_size, start_of_user_area_address, cold_boot_address):
     """
     """
     return WordsSet("hardware_reset",
@@ -1109,7 +1121,7 @@ def by_the_book_hardware_reset_words(version_number, init_values_size, cell_size
         )
     )
 
-def by_the_book_memory_initialization(start_of_data_stack_address,
+def forthpie_memory_initialization(start_of_data_stack_address,
                                       start_of_return_stack_address,
                                       terminal_input_buffer_address,
                                       number_of_vocabularies,
@@ -1156,7 +1168,7 @@ def by_the_book_memory_initialization(start_of_data_stack_address,
 
     return initializer
 
-def by_the_book_eforth_image(start_of_data_stack_address,
+def forthpie_eforth_image(start_of_data_stack_address,
                              start_of_return_stack_address,
                              start_of_user_area_address, # UPP
                              number_of_vocabularies, # VOCCS
@@ -1170,29 +1182,30 @@ def by_the_book_eforth_image(start_of_data_stack_address,
                              cold_boot_address,
                              include_tools_wordset=False):
     image = Image(
-        by_the_book_primitives(),
-        by_the_book_system_and_user_variables(start_of_user_area_address, number_of_vocabularies),
-        by_the_book_common_words(),
-        by_the_book_comparison_words(),
-        by_the_book_divide_words(),
-        by_the_book_multiply_words(),
-        by_the_book_memory_alignment_words(cell_size),
-        by_the_book_memory_access_words(cell_size),
-        by_the_book_numeric_output_single_precision_words(),
-        by_the_book_numeric_input_single_precision_words(),
-        by_the_book_basic_io_words(),
-        by_the_book_parsing_words(),
-        by_the_book_dictionary_search_words(lexicon_mask, cell_size),
-        by_the_book_terminal_response_words(),
-        by_the_book_error_handling_words(),
-        by_the_book_text_interpreter_words(compile_only_bit),
-        by_the_book_shell_words(terminal_input_buffer_address),
-        by_the_book_compiler_words(),
-        by_the_book_structure_words(),
-        by_the_book_name_compiler_words(),
-        by_the_book_forth_compiler_words(immediate_bit, doLISTCode),
-        by_the_book_defining_words(doLISTCode),
-        memory_initializer=by_the_book_memory_initialization(
+        forthpie_primitives(),
+        forthpie_system_and_user_variables(start_of_user_area_address, number_of_vocabularies),
+        forthpie_booleans(),
+        forthpie_common_words(),
+        forthpie_comparison_words(),
+        forthpie_divide_words(),
+        forthpie_multiply_words(),
+        forthpie_memory_alignment_words(cell_size),
+        forthpie_memory_access_words(cell_size),
+        forthpie_numeric_output_single_precision_words(),
+        forthpie_numeric_input_single_precision_words(),
+        forthpie_basic_io_words(),
+        forthpie_parsing_words(),
+        forthpie_dictionary_search_words(lexicon_mask, cell_size),
+        forthpie_terminal_response_words(),
+        forthpie_error_handling_words(),
+        forthpie_text_interpreter_words(compile_only_bit),
+        forthpie_shell_words(terminal_input_buffer_address),
+        forthpie_compiler_words(),
+        forthpie_structure_words(),
+        forthpie_name_compiler_words(),
+        forthpie_forth_compiler_words(immediate_bit, doLISTCode),
+        forthpie_defining_words(doLISTCode),
+        memory_initializer=forthpie_memory_initialization(
             start_of_data_stack_address,
             start_of_return_stack_address,
             terminal_input_buffer_address,
@@ -1201,10 +1214,10 @@ def by_the_book_eforth_image(start_of_data_stack_address,
     )
 
     if include_tools_wordset:
-        image.add_words_set(by_the_book_tools_words())
+        image.add_words_set(forthpie_tools_words())
 
     image.add_words_set(
-        by_the_book_hardware_reset_words(
+        forthpie_hardware_reset_words(
             version_number,
             sum(uv.cells for uv in image.user_variables)+4,
             cell_size,
