@@ -75,7 +75,7 @@ import forthpie.eforth.eforth16bits as eforth16bits
             id="0<"
         ),
         pytest.param(
-            [WordReference("doLIT"),0b100000000000001,WordReference("0<"),WordReference("BYE")],
+            [WordReference("doLIT"),-1,WordReference("0<"),WordReference("BYE")],
             [0xFFFF],
             id="0< -1"
         ),
@@ -83,6 +83,11 @@ import forthpie.eforth.eforth16bits as eforth16bits
             [WordReference("doLIT"),2, WordReference("NEGATE"), WordReference("0<"),WordReference("BYE")],
             [0xFFFF],
             id="0< 2 NEGATE"
+        ),
+        pytest.param(
+            [WordReference("doLIT"), 0x3FFF, WordReference("0<"),WordReference("BYE")],
+            [0x0000],
+            id="0< $3FFFF"
         ),
         pytest.param(
             [WordReference("doLIT"), 42,WordReference("doLIT"), 43,WordReference("2DUP"),WordReference("BYE")],

@@ -78,21 +78,21 @@ def run(interpreter_class, memory, cell_size, compiler_metadata=None, log_level=
         interpreter.return_stack_pointer = interpreter.read_cell_at_address(COLDD+3*cell_size)
     # print(interpreter.return_stack_pointer)
 
-    # try:
-    interpreter.start()
+    try:
+        interpreter.start()
         # print(interpreter.execution_statistics.word_names_to_count(compiler.compiler_metadata))
-    # finally:
-    #     interpreter.print_data_stack()
+    finally:
+        interpreter.print_data_stack()
 
-    #     interpreter.print_return_stack()
+        interpreter.print_return_stack()
 
-        # print("User variables:")
-        # for address in range(UPP, UPP+compiler.user_address, compiler.cell_size):
-        #     print(f"\t{hex(address)}: ", hex(interpreter.read_cell_at_address(address)))
+        print("User variables:")
+        for address in range(UPP, UPP+compiler.user_address, compiler.cell_size):
+            print(f"\t{hex(address)}: ", hex(interpreter.read_cell_at_address(address)))
 
-        # print("TIB[0:10]:")
-        # for address in range(TIBB, TIBB+10):
-        #     print(f"\t{hex(interpreter.memory[address])} ({chr(interpreter.memory[address])})")
+        print("TIB[0:10]:")
+        for address in range(TIBB, TIBB+10):
+            print(f"\t{hex(interpreter.memory[address])} ({chr(interpreter.memory[address])})")
 
 def boostrap_run(interpreter_class, log_level=logging.WARNING):
     # print(f"CELL_SIZE = {hex(CELL_SIZE)}")

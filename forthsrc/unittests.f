@@ -2,21 +2,37 @@
 
 : false ( - f ) 0 ;
 
-: assert-true
+: assert_true
     NOT \ If TOS is false, raise exception.
     ABORT" Assertion error"
 ;
 
-: assert-false
+: assert-true \ deprecated
+    assert_true
+;
+
+: assert_false
     NOT assert-true
 ;
 
-: assert-equals
-    = assert-true
+: assert-false  \ deprecated
+    assert_false
 ;
 
-: assert-not-equals
-    = assert-false
+: assert_equals
+    = assert_true
+;
+
+: assert-equals \ deprecated
+    assert_equals
+;
+
+: assert_not_equals
+    = assert_false
+;
+
+: assert-not-equals \ deprecated
+    assert_not_equals
 ;
 
 : should_raise_any

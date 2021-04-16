@@ -637,7 +637,6 @@ def forthpie_dictionary_search_words(lexicon_mask, cell_size):
         ColonWord("find",
             [WR("SWAP"), WR("DUP"), WR("C@"),
             WR("doLIT"), cell_size, WR("/"), WR("tmp"), WR("!"),
-            # WR("doLIT"), 0x01F, WR("AND"), WR("tmp"), WR("!"), # TOREMOVE: tried to fix previous line with that... Was endianess problem, EForth expects little endian! This line should be removed
             WR("DUP"), WR("@"), WR(">R"),
             WR("CELL+"), WR("SWAP"),
         L("FIND1"), WR("@"), WR("DUP"),
@@ -986,7 +985,9 @@ def forthpie_forth_compiler_words(immediate_bit, doLISTCode):
             [WR("LAST"), WR("@"), WR("CURRENT"), WR("@"), WR("!"), WR("EXIT")]
         ),
         ColonWord(";",
-            [WR("COMPILE"), WR("EXIT"), WR("["), WR("OVERT"), WR("EXIT")],
+            [WR("COMPILE"), WR("EXIT"),
+            WR("["), WR("OVERT"),
+            WR("EXIT")],
             compile_only=True,
             immediate=True
         ),

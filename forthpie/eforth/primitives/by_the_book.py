@@ -285,7 +285,7 @@ def zeroSt(vm):
     ( n -- f )
     """
     n = vm.pop_from_data_stack()
-    if (n >> ((vm.cell_size-1)*8)) == 0:
+    if (n >> ((vm.cell_size*8)-1)) == 0:
         vm.push_on_data_stack(0)
     else:
         vm.push_on_data_stack(vm.cell_all_bit_at_one())

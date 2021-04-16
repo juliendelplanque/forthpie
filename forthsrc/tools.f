@@ -9,10 +9,10 @@
 
 : 0= 0 = ;
 
-: DUMP ( b u -- )
-  BASE @ >R HEX  16 /
-  FOR CR 16 2DUP dm+ -ROT 2 SPACES _TYPE NUF? 0= WHILE
-  NEXT ELSE R> DROP THEN DROP  R> BASE ! ;
+\ : DUMP ( b u -- )
+\   BASE @ >R HEX  16 /
+\   FOR CR 16 2DUP dm+ -ROT 2 SPACES _TYPE NUF? 0= WHILE
+\   NEXT ELSE R> DROP THEN DROP  R> BASE ! ;
 
 : NIP ( w w -- w ) SWAP DROP ;
 
@@ -31,12 +31,12 @@
 : .ID ( na -- )
   ?DUP IF COUNT LEXICON_MASK AND TYPE EXIT THEN ." {noName}" ;
 
-\ : SEE ( -- ; <string> )
-\  ' CR CELL+
-\  BEGIN CELL+ DUP @ DUP
-\    IF >NAME THEN ?DUP
-\    IF SPACE .ID ELSE DUP @ U. THEN NUF?
-\  UNTIL DROP ;
+: SEE ( -- ; <string> )
+ ' CR
+ BEGIN CELL+ DUP @ DUP
+   IF >NAME THEN ?DUP
+    IF SPACE .ID ELSE DUP @ U. THEN 1
+ UNTIL DROP ;
 
 : WORDS ( -- )
   CR  CONTEXT @
