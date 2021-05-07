@@ -82,17 +82,18 @@ def run(interpreter_class, memory, cell_size, compiler_metadata=None, log_level=
         interpreter.start()
         # print(interpreter.execution_statistics.word_names_to_count(compiler.compiler_metadata))
     finally:
-        interpreter.print_data_stack()
+        pass
+        # interpreter.print_data_stack()
 
-        interpreter.print_return_stack()
+        # interpreter.print_return_stack()
 
-        print("User variables:")
-        for address in range(UPP, UPP+compiler.user_address, compiler.cell_size):
-            print(f"\t{hex(address)}: ", hex(interpreter.read_cell_at_address(address)))
+        # print("User variables:")
+        # for address in range(UPP, UPP+compiler.user_address, compiler.cell_size):
+        #     print(f"\t{hex(address)}: ", hex(interpreter.read_cell_at_address(address)))
 
-        print("TIB[0:10]:")
-        for address in range(TIBB, TIBB+10):
-            print(f"\t{hex(interpreter.memory[address])} ({chr(interpreter.memory[address])})")
+        # print("TIB[0:10]:")
+        # for address in range(TIBB, TIBB+10):
+        #     print(f"\t{hex(interpreter.memory[address])} ({chr(interpreter.memory[address])})")
 
 def boostrap_run(interpreter_class, log_level=logging.WARNING):
     # print(f"CELL_SIZE = {hex(CELL_SIZE)}")
@@ -107,14 +108,14 @@ def boostrap_run(interpreter_class, log_level=logging.WARNING):
     # print(f"UPP = {hex(UPP)}")
     # print(f"NAMEE = {hex(NAMEE)}")
     # print(f"CODEE = {hex(CODEE)}")
-    logging.root.setLevel(log_level)
 
     compiler = bootstrap_16bits_eforth()
     run(
         interpreter_class,
         compiler.memory,
         cell_size=compiler.cell_size,
-        compiler_metadata=compiler.compiler_metadata
+        compiler_metadata=compiler.compiler_metadata,
+        log_level=log_level
     )
 
 if __name__ == "__main__":

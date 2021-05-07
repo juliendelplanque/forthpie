@@ -260,6 +260,11 @@ import forthpie.eforth.eforth16bits as eforth16bits
             id="42 5 /"
         ),
         pytest.param(
+            [WordReference("doLIT"), -2, WordReference("doLIT"), 2, WordReference("/"),WordReference("BYE")],
+            [65535], # -1
+            id="-2 2 /"
+        ),
+        pytest.param(
             [WordReference("doLIT"), 3, WordReference("doLIT"), 2, WordReference("*"),WordReference("BYE")],
             [3*2],
             id="3 2 *"

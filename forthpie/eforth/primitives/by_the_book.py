@@ -344,7 +344,7 @@ def UMplus(vm):
 @primitive(31, "UM/MOD")
 def UMMOD(vm):
     u = vm.pop_from_data_stack()
-    d = vm.pop_from_data_stack() << vm.cell_size
+    d = vm.pop_from_data_stack() << (vm.cell_size*8)
     d |= vm.pop_from_data_stack()
 
     vm.push_on_data_stack(d % u)
