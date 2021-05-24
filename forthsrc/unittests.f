@@ -11,6 +11,10 @@
     assert_true
 ;
 
+: fail
+    false assert_true
+;
+
 : assert_false
     NOT assert-true
 ;
