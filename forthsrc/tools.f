@@ -34,8 +34,14 @@
 : SEE ( -- ; <string> )
  ' CR
  BEGIN CELL+ DUP @ DUP
-   IF >NAME THEN ?DUP
-    IF SPACE .ID ELSE DUP @ U. THEN 1
+   IF >NAME
+   THEN ?DUP
+   IF
+    SPACE .ID
+   ELSE
+    DUP @ U.
+  THEN
+  DUP @ [ ' EXIT ] LITERAL =
  UNTIL DROP ;
 
 : WORDS ( -- )
