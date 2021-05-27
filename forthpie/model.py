@@ -49,6 +49,10 @@ class Word(object):
     def is_user_variable(self):
         return False
 
+    @property
+    def word_references(self):
+        return [token for token in self.tokens if type(token) == WordReference]
+
 class Primitive(Word):
     def __init__(self, name, **kwargs):
         super().__init__(name, [], **kwargs)
@@ -130,6 +134,9 @@ class Image(object):
     @property
     def colon_words(self):
         return [ w for ws in self.words_sets for w in ws.colon_words ]
+
+    def words_set_named(self, name):
+        return next(ws for ws in self.words_sets if ws.name == name)
 
     def __str__(self):
         return f"{self.__class__.__name__}({[ ws.name for ws in self.words_sets ]})"

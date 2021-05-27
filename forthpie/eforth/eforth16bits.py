@@ -26,7 +26,7 @@ CODEE = COLDD+US # 0x180 # code dictionary
 
 primitives_store = by_the_book_primitives_store()
 
-def bootstrap_16bits_eforth():
+def generate_compiler_and_image():
     compiler = Compiler(
         cell_size=CELL_SIZE,
         initial_code_address=CODEE,
@@ -51,6 +51,11 @@ def bootstrap_16bits_eforth():
         cold_boot_address=COLDD,
         include_tools_wordset=True
     )
+
+    return compiler, image
+
+def bootstrap_16bits_eforth():
+    compiler, image = generate_compiler_and_image()
 
     ImageCompiler(compiler).visit_Image(image)
 
