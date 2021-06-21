@@ -42,7 +42,7 @@ def generate_compiler_and_image():
         start_of_user_area_address=UPP,
         number_of_vocabularies=VOCSS,
         cell_size=CELL_SIZE,
-        lexicon_mask=compiler.LEXICON_MASK,
+        lexicon_mask=compiler.LEXICON_MASK_CELL,
         immediate_bit=compiler.IMMEDIATE,
         compile_only_bit=compiler.COMPILE_ONLY,
         doLISTCode=5, #TODO: do not hardcode
