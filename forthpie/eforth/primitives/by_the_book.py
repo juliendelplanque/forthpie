@@ -362,12 +362,10 @@ def SNAPSHOT(vm):
 
     ( addr u-count should-quit? - )
     """
-    print("hey")
     should_quit = vm.pop_from_data_stack()
     string_length = vm.pop_from_data_stack()
     string_address = vm.pop_from_data_stack()
     file_path = bytes(vm.memory[string_address:string_address+string_length]).decode("ascii")
-    print(file_path)
 
     COLDD = 0x100  # cold boot data address... TODO: should not be hardcoded here
     vm.write_cell_at_address(
