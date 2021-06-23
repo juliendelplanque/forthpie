@@ -1025,71 +1025,6 @@ def forthpie_defining_words(doLISTCode):
         )
     )
 
-def forthpie_tools_words():
-    """
-    """
-    return WordsSet("tools",
-        ColonWord("_TYPE",
-            [WR(">R"),
-            WR("branch"), LR("UTYP2"),
-        L("UTYP1"), WR("DUP"), WR("C@"), WR(">CHAR"), WR("EMIT"),
-            WR("doLIT"), 1, WR("+"),
-        L("UTYP2"), WR("next"), LR("UTYP1"),
-            WR("DROP"), WR("EXIT")]
-        ),
-        ColonWord("dm+",
-            [WR("OVER"), WR("doLIT"), 4, WR("U.R"),
-            WR("SPACE"), WR(">R"),
-            WR("branch"), LR("PDUM2"),
-        L("PDUM1"), WR("DUP"), WR("C@"), WR("doLIT"), 3, WR("U.R"),
-            WR("doLIT"), 1, WR("+"),
-        L("PDUM2"), WR("next"), LR("PDUM1"),
-            WR("EXIT")]
-        ),
-        ColonWord("DUMP",
-            [WR("BASE"), WR("@"), WR(">R"), WR("HEX"),
-            WR("doLIT"), 16, WR("/"),
-            WR(">R"),
-        L("DUMP1"), WR("CR"), WR("doLIT"), 16, WR("2DUP"), WR("dm+"),
-            WR("ROT"), WR("ROT"),
-            WR("SPACE"), WR("SPACE"), WR("_TYPE"),
-            WR("NUF?"), WR("NOT"),
-            WR("?branch"), LR("DUMP2"),
-            WR("next"), LR("DUMP1"),
-            WR("branch"), LR("DUMP3"),
-        L("DUMP2"), WR("R>"), WR("DROP"),
-        L("DUMP3"), WR("DROP"), WR("R>"), WR("BASE"), WR("!"),
-            WR("EXIT")]
-        ),
-        # ColonWord(".S",
-        #     [WR("CR"), WR("DEPTH"),
-        #     WR(">R"),
-        #     WR("branch"), LR("DOTS2"),
-        # L("DOTS1"), WR("R@"), WR("PICK"), WR("."),
-        # L("DOTS2"), WR("next"), LR("DOTS1"),
-        #     WR('."|'), ' <sp',
-        #     WR("EXIT")]
-        # )
-        # ColonWord("!CSP",
-        #     []#TODO
-        # )
-        # ColonWord("?CSP",
-        #     []#TODO
-        # )
-        # ColonWord(">NAME",
-        #     []#TODO
-        # )
-        # ColonWord(".ID",
-        #     []#TODO
-        # )
-        # ColonWord("SEE",
-        #     []#TODO
-        # )
-        # ColonWord("WORDS",
-        #     []#TODO
-        # )
-    )
-
 def forthpie_hardware_reset_words(version_number, init_values_size, cell_size, start_of_user_area_address, cold_boot_address):
     """
     """
@@ -1213,9 +1148,6 @@ def forthpie_eforth_image(start_of_data_stack_address,
             number_of_vocabularies,
             cold_boot_address)
     )
-
-    if include_tools_wordset:
-        image.add_words_set(forthpie_tools_words())
 
     image.add_words_set(
         forthpie_hardware_reset_words(
