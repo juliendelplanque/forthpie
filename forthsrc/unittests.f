@@ -1,7 +1,3 @@
-: true ( - f ) -1 ;
-
-: false ( - f ) 0 ;
-
 : assert_true
     NOT \ If TOS is false, raise exception.
     ABORT" Assertion error"
@@ -12,7 +8,7 @@
 ;
 
 : fail
-    false assert_true
+    FALSE assert_true
 ;
 
 : assert_false
@@ -71,10 +67,10 @@
         CELL- @
         DUP 0 = \ end of linked list
         IF
-            false EXIT
+            FALSE EXIT
         THEN
     REPEAT
-    true
+    TRUE
 ;
 
 VARIABLE 'test_name_printer
@@ -115,7 +111,7 @@ VARIABLE 'test_result_printer
     \ Runs all the tests reachable starting from LAST.
     LAST CELL+
     BEGIN
-        next_test true =
+        next_test TRUE =
     WHILE
         \ Print test name.
         CR DUP print_test_name SPACE

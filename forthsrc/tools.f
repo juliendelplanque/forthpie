@@ -5,16 +5,16 @@
 
 : .S ( -- ) CR DEPTH FOR AFT R@ PICK . THEN NEXT ."  <tos" ;
 
-: -ROT SWAP >R SWAP R> ;
-
-: 0= 0 = ;
-
-\ : DUMP ( b u -- )
-\   BASE @ >R HEX  16 /
-\   FOR CR 16 2DUP dm+ -ROT 2 SPACES _TYPE NUF? 0= WHILE
-\   NEXT ELSE R> DROP THEN DROP  R> BASE ! ;
-
-: NIP ( w w -- w ) SWAP DROP ;
+: DUMP ( b u -- )
+  BASE @ >R \ Save current base on top of return stack
+  HEX \ Set base to hexadecimal
+  16 /
+  FOR
+    CR 16 2DUP dm+ -ROT 2 SPACES _TYPE TRUE WHILE
+  NEXT ELSE
+    R> DROP THEN DROP
+  R> BASE ! \ Restore base.
+;
 
 : !CSP ( -- ) SP@ CSP ! ;
 

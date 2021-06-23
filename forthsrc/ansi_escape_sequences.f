@@ -51,3 +51,9 @@
 : white_esc
     7 esc
 ;
+
+: type_red ( addr n - )
+    red_esc
+    TYPE
+    reset_esc
+;
