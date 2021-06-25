@@ -52,11 +52,102 @@
 \ Anonymous word
 : :noname HERE 5 , ] ;
 
-\ Setting forthpie boot message
+\ Memory manipulation
 
-: forthpie_hi
-    !IO CR
-    ." Welcome to forthpie. Press BYE to quit."
+: cell_map ( addr n xt - )
+    SWAP \ addr xt n
+    FOR
+        2DUP EXECUTE
+        SWAP CELL+ SWAP
+    NEXT
+    2DROP
 ;
 
-' forthpie_hi 'BOOT !
+: char_map ( addr n xt - )
+    SWAP \ addr xt n
+    FOR
+        2DUP EXECUTE
+        SWAP 1+ SWAP
+    NEXT
+    2DROP
+;
+
+\ Strings support
+
+VARIABLE temp_str
+
+: is_lowercase_alpha ( c - f )
+    \ is the char between a and z code ?
+    97 122 WITHIN
+;
+
+: char_to_uppercase ( c - c )
+    DUP is_lowercase_alpha
+    IF
+        32 - \ Convert to capital letter
+    THEN
+;
+
+: char@_to_uppercase ( addr - )
+    DUP C@ \ addr c
+    char_to_uppercase \ addr C
+    SWAP C!
+;
+
+: to_uppercase ( addr n - addr n )
+    \ MODIFIES the string provided as parameter to be uppercase.
+    
+    \ 2DUP
+    \ FOR
+    \     DUP char@_to_uppercase 1+
+    \ NEXT
+    \ DROP
+
+    2DUP [ ' char@_to_uppercase ]
+    char_map
+;
+
+: is_uppercase_alpha ( c - f )
+    \ is the char between A and Z code ?
+    65 90 WITHIN
+;
+
+: char_to_lowercase ( c - c )
+    DUP is_lowercase_alpha
+    IF
+        32 + \ Convert to lowercase letter
+    THEN
+;
+
+: char@_to_lowercase ( addr - )
+    DUP C@ \ addr c
+    char_to_lowercase \ addr C
+    SWAP C!
+;
+
+: to_lowercase ( addr n - addr n )
+    \ MODIFIES the string provided as parameter to be uppercase.
+    2DUP
+    FOR
+        DUP char@_to_lowercase 1+
+    NEXT
+    DROP
+;
+
+0 temp_str !
+
+: allocate_temp_str_if_needed
+    temp_str @ 0=
+    IF
+        256 ALLOT HERE temp_str !
+    THEN
+;
+
+: s"
+    allocate_temp_str_if_needed
+    [ CHAR " ] LITERAL PARSE
+
+    temp_str @
+    PACK$
+    COUNT
+;
