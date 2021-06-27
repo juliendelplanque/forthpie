@@ -1,12 +1,40 @@
+\ Forth Compiler
+
+: COMPILE_ONLY_bit
+    64
+;
+
+: COMPILE_ONLY
+    COMPILE_ONLY_bit LAST @ @ OR
+    LAST @ !
+;
+
+: IMMEDIATE_bit
+    128
+;
+
+: IMMEDIATE
+    IMMEDIATE_bit LAST @ @ OR
+    LAST @ !
+;
+
+: POSTPONE
+    ' ,
+; IMMEDIATE
+
+: [CHAR]
+    CHAR POSTPONE LITERAL
+; IMMEDIATE
+
+: [']
+    R> DUP CELL+ >R @
+;
+
 \ Arithmetic
 
 : 1+ 1 + ;
 
 : 1- 1 - ;
-
-: [']
-    R> DUP CELL+ >R @
-;
 
 \ Arithmetic tests
 
@@ -75,34 +103,6 @@
     NEXT
     2DROP
 ;
-
-\ Forth Compiler
-
-: COMPILE_ONLY_bit
-    64
-;
-
-: COMPILE_ONLY
-    COMPILE_ONLY_bit LAST @ @ OR
-    LAST @ !
-;
-
-: IMMEDIATE_bit
-    128
-;
-
-: IMMEDIATE
-    IMMEDIATE_bit LAST @ @ OR
-    LAST @ !
-;
-
-: POSTPONE
-    ' ,
-; IMMEDIATE
-
-: [CHAR]
-    CHAR POSTPONE LITERAL
-; IMMEDIATE
 
 \ Strings support
 
