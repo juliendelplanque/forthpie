@@ -4,9 +4,13 @@
 
 : 1- 1 - ;
 
+: [']
+    R> DUP CELL+ >R @
+;
+
 \ Arithmetic tests
 
-: x_or_eq_macro
+: x_or_eq_macro ( xt - )
     COMPILE 2DUP
     ,
     COMPILE >R
@@ -94,17 +98,9 @@ VARIABLE temp_str
     SWAP C!
 ;
 
-: to_uppercase ( addr n - addr n )
+: to_uppercase ( addr n - )
     \ MODIFIES the string provided as parameter to be uppercase.
-    
-    \ 2DUP
-    \ FOR
-    \     DUP char@_to_uppercase 1+
-    \ NEXT
-    \ DROP
-
-    2DUP [ ' char@_to_uppercase ]
-    char_map
+    ['] char@_to_uppercase char_map
 ;
 
 : is_uppercase_alpha ( c - f )
@@ -125,13 +121,9 @@ VARIABLE temp_str
     SWAP C!
 ;
 
-: to_lowercase ( addr n - addr n )
+: to_lowercase ( addr n - )
     \ MODIFIES the string provided as parameter to be uppercase.
-    2DUP
-    FOR
-        DUP char@_to_lowercase 1+
-    NEXT
-    DROP
+    ['] char@_to_lowercase char_map
 ;
 
 0 temp_str !
