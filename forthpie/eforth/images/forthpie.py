@@ -1001,10 +1001,6 @@ def forthpie_forth_compiler_words(immediate_bit, doLISTCode):
             [WR("TOKEN"), WR("$,n"),
             WR("doLIT"), doLISTCode, WR(","),
             WR("]"), WR("EXIT")]
-        ),
-        ColonWord("IMMEDIATE",
-            [WR("doLIT"), immediate_bit, WR("LAST"), WR("@"), WR("@"), WR("OR"),
-            WR("LAST"), WR("@"), WR("!"), WR("EXIT")]
         )
     )
 

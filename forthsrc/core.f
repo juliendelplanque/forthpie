@@ -76,19 +76,46 @@
     2DROP
 ;
 
+\ Forth Compiler
+
+: COMPILE_ONLY_bit
+    64
+;
+
+: COMPILE_ONLY
+    COMPILE_ONLY_bit LAST @ @ OR
+    LAST @ !
+;
+
+: IMMEDIATE_bit
+    128
+;
+
+: IMMEDIATE
+    IMMEDIATE_bit LAST @ @ OR
+    LAST @ !
+;
+
 \ Strings support
 
 VARIABLE temp_str
 
+: lower_upper_diff
+    COMPILE doLIT
+    [ CHAR a CHAR A - ] LITERAL ,
+; IMMEDIATE COMPILE_ONLY
+
 : is_lowercase_alpha ( c - f )
     \ is the char between a and z code ?
-    97 122 WITHIN
+    [ CHAR a ] LITERAL
+    [ CHAR z ] LITERAL
+    WITHIN
 ;
 
 : char_to_uppercase ( c - c )
     DUP is_lowercase_alpha
     IF
-        32 - \ Convert to capital letter
+        lower_upper_diff - \ Convert to capital letter
     THEN
 ;
 
@@ -105,13 +132,14 @@ VARIABLE temp_str
 
 : is_uppercase_alpha ( c - f )
     \ is the char between A and Z code ?
-    65 90 WITHIN
+    [ CHAR A ] LITERAL
+    [ CHAR Z ] LITERAL WITHIN
 ;
 
 : char_to_lowercase ( c - c )
-    DUP is_lowercase_alpha
+    DUP is_uppercase_alpha
     IF
-        32 + \ Convert to lowercase letter
+        lower_upper_diff + \ Convert to lowercase letter
     THEN
 ;
 
