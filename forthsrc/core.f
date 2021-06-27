@@ -96,6 +96,14 @@
     LAST @ !
 ;
 
+: POSTPONE
+    ' ,
+; IMMEDIATE
+
+: [CHAR]
+    CHAR POSTPONE LITERAL
+; IMMEDIATE
+
 \ Strings support
 
 VARIABLE temp_str
@@ -107,9 +115,7 @@ VARIABLE temp_str
 
 : is_lowercase_alpha ( c - f )
     \ is the char between a and z code ?
-    [ CHAR a ] LITERAL
-    [ CHAR z ] LITERAL
-    WITHIN
+    [CHAR] a [CHAR] z WITHIN
 ;
 
 : char_to_uppercase ( c - c )
@@ -132,8 +138,7 @@ VARIABLE temp_str
 
 : is_uppercase_alpha ( c - f )
     \ is the char between A and Z code ?
-    [ CHAR A ] LITERAL
-    [ CHAR Z ] LITERAL WITHIN
+    [CHAR] A [CHAR] Z WITHIN
 ;
 
 : char_to_lowercase ( c - c )
@@ -165,7 +170,7 @@ VARIABLE temp_str
 
 : s"
     allocate_temp_str_if_needed
-    [ CHAR " ] LITERAL PARSE
+    [CHAR] " PARSE
 
     temp_str @
     PACK$
