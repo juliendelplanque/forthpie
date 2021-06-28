@@ -82,7 +82,9 @@
 : -ROT SWAP >R SWAP R> ;
 
 \ Anonymous word
-: :noname HERE 5 , ] ;
+: :noname
+    HERE ['] doLIST @ , ]
+;
 
 \ Memory manipulation
 
