@@ -24,11 +24,11 @@
 
 : [CHAR]
     CHAR POSTPONE LITERAL
-; IMMEDIATE
+; IMMEDIATE COMPILE_ONLY
 
 : [']
     R> DUP CELL+ >R @
-;
+; COMPILE_ONLY
 
 \ Arithmetic
 
