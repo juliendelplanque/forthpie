@@ -1,5 +1,1 @@
-:noname
-    $" memory.image"
-;
-
-EXECUTE COUNT TRUE SNAPSHOT
+s" memory.image" TRUE SNAPSHOT
