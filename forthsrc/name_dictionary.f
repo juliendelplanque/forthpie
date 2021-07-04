@@ -8,7 +8,7 @@
 \ +----+----------+------+ - - -
 \ | xt | previous | meta |
 \ +----+----------+------+ - - -
-\                   ^ na is a points on the address of this byte
+\                   ^ na is a pointer to the address of this byte
 \
 
 : previous_entry ( na - na )
