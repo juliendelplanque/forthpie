@@ -186,3 +186,61 @@ VARIABLE temp_str
     PACK$
     COUNT
 ;
+
+\ DOES>
+
+: shift_cell_right ( addr - )
+    \ Move the value of the cell at addr to the cell at addr+1 in memory.
+    DUP @ SWAP CELL+ !
+;
+
+: last_cell_address ( addr cells-count - end-address )
+    CELLS +
+;
+
+: shift_cells_right ( addr cells-count - )
+    \ Move the values of the cells-count cells starting at addr to the next
+    \ cell in memory.
+    SWAP DUP ROT \ addr addr cells-count
+    last_cell_address \ addr end-addr
+    BEGIN
+        2DUP U<=
+    WHILE
+        DUP shift_cell_right
+        CELL-
+    REPEAT
+    2DROP
+;
+
+: shift_cells_right_twice ( addr cells-count - )
+    \ Move the values of the cells-count cells starting at addr to the next
+    \ cell in memory. Then move the values of the cells-count cells starting at
+    \ addr+CELL_SIZE to the next cell in memory.
+    2DUP
+    shift_cells_right
+    SWAP CELL+ SWAP
+    shift_cells_right
+;
+
+: LASTXT
+    LAST @ NAME>
+;
+
+: doDOES> ( xt - )
+    R> DUP
+    @ >R
+    CELL+
+;
+
+: last_word_xt_len
+    \ Computes the number of cells required by the last word xt.
+    HERE LASTXT - \ size in byte
+    1 CELLS / \ size in cells
+;
+
+: DOES>
+    LASTXT CELL+ CELL+ last_word_xt_len shift_cells_right
+    HERE 2 CELLS + CP !
+    ['] doDOES> LASTXT CELL+ !
+    R> LASTXT CELL+ CELL+ !
+; COMPILE_ONLY
